@@ -1,0 +1,89 @@
+---
+title: "Export accounting data via the REST API"
+description: "GET /accountancy/exportdata — export Dolibarr bookkeeping entries by period in CSV or FEC format. Supports custom date ranges and lettering data."
+---
+
+The accounting API exposes a single export endpoint that lets you pull bookkeeping entries from Dolibarr for use in external accounting systems, BI tools, auditing software, or tax reporting workflows. Accounting entries themselves are created automatically by Dolibarr when you validate invoices and record payments through the sales and purchasing APIs.
+
+**Base path:** `/api/index.php/accountancy`
+
+<Note>
+  The accounting API currently provides one endpoint: `GET /accountancy/exportdata`. Creating or modifying accounting entries is done indirectly through the invoicing and payment APIs — Dolibarr generates the journal entries automatically.
+</Note>
+
+---
+
+## Export accounting data
+
+`GET /accountancy/exportdata`
+
+Exports bookkeeping entries for a specified time period. Returns the data as a formatted string in the selected export format (CSV or FEC). Requires the `accounting → mouvements → export` permission.
+
+<ParamField query="period" type="string" required>
+  Time period to export. One of: `lastmonth`, `currentmonth`, `last3months`, `last6months`, `currentyear`, `lastyear`, `fiscalyear`, `lastfiscalyear`, `actualandlastfiscalyear`, or `custom` (requires `date_min` and `date_max`).
+</ParamField>
+
+<ParamField query="date_min" type="string">
+  Start date in `YYYY-MM-DD` format. Required when `period` is `custom`.
+</ParamField>
+
+<ParamField query="date_max" type="string">
+  End date in `YYYY-MM-DD` format. Required when `period` is `custom`.
+</ParamField>
+
+<ParamField query="format" type="string">
+  Export format number. Use `1` for configurable CSV (default), `1000` for FEC (French Fichier des Écritures Comptables), or `1010` for FEC2. The full list of supported formats is defined in the `AccountancyExport` class.
+</ParamField>
+
+<ParamField query="lettering" type="integer" default="0">
+  Set to `1` to include lettering columns (`lettering_code` and `date_lettering`) in the export output.
+</ParamField>
+
+<ParamField query="alreadyexport" type="integer" default="0">
+  Set to `1` to export entries regardless of whether they have already been exported previously.
+</ParamField>
+
+<ParamField query="notnotifiedasexport" type="integer" default="0">
+  Set to `1` to export without marking entries as exported (the `date_export` field will not be updated).
+</ParamField>
+
+<ResponseField name="(file content)" type="string">
+  Returns the exported accounting data as a plain-text string in the requested format. For CSV, rows are delimited by newlines with a configurable separator. For FEC, the output follows the French Fichier des Écritures Comptables standard.
+</ResponseField>
+
+### Examples
+
+```bash Export last month as CSV
+curl -X GET "https://yourdomain.tld/api/index.php/accountancy/exportdata?period=lastmonth&format=1" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+```bash Export a custom date range in FEC format
+curl -X GET "https://yourdomain.tld/api/index.php/accountancy/exportdata?period=custom&date_min=2024-01-01&date_max=2024-03-31&format=1000" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+### Error responses
+
+| Status | Meaning |
+|--------|---------|
+| 403 | Insufficient rights — user lacks the `accounting → mouvements → export` permission |
+| 404 | Period not found — invalid value for `period` parameter |
+| 404 | Custom date range not defined — `period=custom` set but `date_min`/`date_max` missing |
+| 404 | Format not found — invalid value for `format` parameter |
+| 500 | Export failed — server-side error during export generation |
+
+---
+
+## Accounting data created by other APIs
+
+Dolibarr generates accounting journal entries automatically when you use the following APIs:
+
+| Action | API call | Accounting effect |
+|--------|----------|-------------------|
+| Validate a customer invoice | `POST /invoices/{id}/validate` | Posts revenue and tax entries |
+| Record a customer payment | `POST /invoices/{id}/payments` | Posts cash/bank receipt entries |
+| Validate a supplier invoice | `POST /supplier_invoices/{id}/validate` | Posts expense and tax entries |
+| Record a supplier payment | `POST /supplier_invoices/{id}/payments` | Posts bank disbursement entries |
+
+To read the resulting journal entries, use the export endpoint above.

@@ -1,0 +1,390 @@
+---
+title: "REST API endpoints for HR and leave management"
+description: "GET, POST, PUT, DELETE /holidays and /expensereports — manage employee leave requests and expense reports via the Dolibarr REST API."
+---
+
+The HR APIs cover leave management and expense reports, letting HRIS systems sync data with Dolibarr. Use the holidays API to submit and approve leave requests, and the expense reports API to capture employee expenses through the approval workflow.
+
+**Base paths:**
+- `/api/index.php/holidays`
+- `/api/index.php/expensereports`
+
+---
+
+## Leave requests (holidays)
+
+### List leave requests
+
+`GET /holidays`
+
+<ParamField query="fk_user" type="integer">
+  Filter by employee user ID.
+</ParamField>
+
+<ParamField query="status" type="integer">
+  Filter by leave request status: `1` draft, `2` validated (submitted), `3` approved, `4` refused.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL filter criteria. Example: `(t.date_debut:>:'2024-01-01')`
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/holidays?fk_user=7&status=2" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+### Create a leave request
+
+`POST /holidays`
+
+<ParamField body="fk_user" type="integer" required>
+  ID of the employee requesting leave.
+</ParamField>
+
+<ParamField body="date_debut" type="integer" required>
+  Start date of the leave as a Unix timestamp.
+</ParamField>
+
+<ParamField body="date_fin" type="integer" required>
+  End date of the leave as a Unix timestamp.
+</ParamField>
+
+<ParamField body="fk_type" type="integer">
+  Leave type ID (references the leave type dictionary, e.g. annual leave, sick leave).
+</ParamField>
+
+<ParamField body="description" type="string">
+  Reason or description for the leave request.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/holidays" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fk_user": 7,
+    "date_debut": 1719792000,
+    "date_fin": 1720051200,
+    "fk_type": 1,
+    "description": "Annual leave"
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created leave request.
+</ResponseField>
+
+---
+
+### Get a leave request
+
+`GET /holidays/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the leave request to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Leave request ID.
+</ResponseField>
+
+<ResponseField name="fk_user" type="integer">
+  ID of the employee.
+</ResponseField>
+
+<ResponseField name="date_debut" type="integer">
+  Start date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="date_fin" type="integer">
+  End date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Leave description.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Leave request status: `1` draft, `2` validated, `3` approved, `4` refused.
+</ResponseField>
+
+<ResponseField name="nb_days" type="number">
+  Number of leave days requested.
+</ResponseField>
+
+---
+
+### Update a leave request
+
+`PUT /holidays/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the leave request to update.
+</ParamField>
+
+Supply any leave request fields in the request body. Only draft requests can be updated.
+
+---
+
+### Delete a leave request
+
+`DELETE /holidays/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the leave request to delete.
+</ParamField>
+
+---
+
+### Approve a leave request
+
+`POST /holidays/{id}/validate`
+
+Approves a submitted leave request, transitioning it to `statut=3` (approved).
+
+<ParamField path="id" type="integer" required>
+  ID of the leave request to approve.
+</ParamField>
+
+---
+
+## Expense reports
+
+### List expense reports
+
+`GET /expensereports`
+
+<ParamField query="fk_user_author" type="integer">
+  Filter by the employee (author) user ID.
+</ParamField>
+
+<ParamField query="status" type="integer">
+  Filter by status: `0` draft, `2` validated, `5` approved, `6` paid.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL filter criteria.
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/expensereports?fk_user_author=7&status=0" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+### Create an expense report
+
+`POST /expensereports`
+
+<ParamField body="fk_user_author" type="integer" required>
+  ID of the employee submitting the expense report.
+</ParamField>
+
+<ParamField body="date_debut" type="integer" required>
+  Start date of the expense period as a Unix timestamp.
+</ParamField>
+
+<ParamField body="date_fin" type="integer" required>
+  End date of the expense period as a Unix timestamp.
+</ParamField>
+
+<ParamField body="lines" type="array">
+  Array of expense lines. Each line must include `date`, `fk_c_type_fees`, `qty`, `value_unit`, and `vatrate`.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/expensereports" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fk_user_author": 7,
+    "date_debut": 1704067200,
+    "date_fin": 1704153600,
+    "lines": [
+      {
+        "date": 1704067200,
+        "fk_c_type_fees": 2,
+        "qty": 1,
+        "value_unit": 85.00,
+        "vatrate": 20,
+        "comments": "Hotel accommodation - client visit"
+      }
+    ]
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created expense report.
+</ResponseField>
+
+---
+
+### Get an expense report
+
+`GET /expensereports/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the expense report to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Expense report ID.
+</ResponseField>
+
+<ResponseField name="fk_user_author" type="integer">
+  ID of the employee who submitted the report.
+</ResponseField>
+
+<ResponseField name="date_debut" type="integer">
+  Start date of the expense period as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="date_fin" type="integer">
+  End date of the expense period as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Total amount excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Total amount including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Report status: `0` draft, `2` validated (submitted), `5` approved, `6` paid.
+</ResponseField>
+
+<ResponseField name="lines" type="array">
+  Array of expense line objects.
+
+  <Expandable title="Line fields">
+    <ResponseField name="id" type="integer">
+      Line ID.
+    </ResponseField>
+
+    <ResponseField name="fk_c_type_fees" type="integer">
+      Expense type ID (references the expense type dictionary).
+    </ResponseField>
+
+    <ResponseField name="date" type="integer">
+      Expense date as a Unix timestamp.
+    </ResponseField>
+
+    <ResponseField name="total_ht" type="number">
+      Line amount excluding tax.
+    </ResponseField>
+
+    <ResponseField name="tva_tx" type="number">
+      VAT rate applied.
+    </ResponseField>
+
+    <ResponseField name="comments" type="string">
+      Description or comments for this expense line.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+### Update an expense report
+
+`PUT /expensereports/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the expense report to update.
+</ParamField>
+
+Supply any expense report fields in the request body. Only draft reports can be updated.
+
+---
+
+### Delete an expense report
+
+`DELETE /expensereports/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the expense report to delete.
+</ParamField>
+
+---
+
+### Submit an expense report for approval
+
+`POST /expensereports/{id}/validate`
+
+Submits a draft expense report for manager approval, transitioning it to `statut=2` (validated).
+
+<ParamField path="id" type="integer" required>
+  ID of the expense report to submit.
+</ParamField>
+
+---
+
+### Add an expense line
+
+`POST /expensereports/{id}/lines`
+
+<ParamField path="id" type="integer" required>
+  ID of the expense report.
+</ParamField>
+
+<ParamField body="date" type="integer" required>
+  Date of the expense as a Unix timestamp.
+</ParamField>
+
+<ParamField body="fk_c_type_fees" type="integer" required>
+  Expense type ID (e.g. accommodation, meals, transport).
+</ParamField>
+
+<ParamField body="qty" type="number" required>
+  Quantity (typically `1` for single expenses).
+</ParamField>
+
+<ParamField body="value_unit" type="number" required>
+  Unit price excluding tax.
+</ParamField>
+
+<ParamField body="vatrate" type="number" required>
+  VAT rate as a percentage.
+</ParamField>
+
+<ParamField body="comments" type="string">
+  Description or justification for the expense.
+</ParamField>

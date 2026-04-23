@@ -1,0 +1,269 @@
+---
+title: "REST API endpoints for commercial proposals"
+description: "GET, POST, PUT, DELETE /proposals — create and manage sales proposals with product lines, validate, close as won or lost, and convert to orders."
+---
+
+Proposals (also called quotes) are the starting point of the Dolibarr sales cycle. Use the proposals API to create and send quotes to customers, collect e-signatures, track acceptance, and convert winning proposals directly into sales orders.
+
+**Base path:** `/api/index.php/proposals`
+
+---
+
+## List proposals
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of third-party IDs to filter by (e.g. `1` or `1,2,3`).
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL filter criteria. Example: `(t.ref:like:'PO-%') and (t.datec:<:'2024-01-01')`
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+<ParamField query="pagination_data" type="boolean" default="false">
+  Set to `true` to include pagination metadata in the response.
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/proposals?thirdparty_ids=42&limit=20" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+**Proposal status values:** `0` = draft, `1` = validated, `2` = signed (won), `3` = not signed (lost), `4` = billed.
+
+---
+
+## Create a proposal
+
+`POST /proposals`
+
+<ParamField body="socid" type="integer" required>
+  ID of the third party (customer) this proposal is for.
+</ParamField>
+
+<ParamField body="date_valid" type="integer">
+  Validity date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="note_public" type="string">
+  Public note visible to the customer.
+</ParamField>
+
+<ParamField body="note_private" type="string">
+  Internal note not visible to the customer.
+</ParamField>
+
+<ParamField body="lines" type="array">
+  Array of proposal lines. Each line should include `fk_product`, `qty`, `subprice`, and `tva_tx`.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/proposals" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "socid": 42,
+    "date_valid": 1735689600,
+    "note_public": "Valid for 30 days.",
+    "lines": [
+      {
+        "fk_product": 10,
+        "qty": 2,
+        "subprice": 150.00,
+        "tva_tx": 20
+      }
+    ]
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created proposal.
+</ResponseField>
+
+---
+
+## Get a proposal
+
+`GET /proposals/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal to retrieve.
+</ParamField>
+
+<ParamField query="contact_list" type="integer" default="1">
+  `0` returns full contact objects; `1` returns only contact IDs.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Proposal ID.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Proposal reference number (e.g. `PO-2024-0001`).
+</ResponseField>
+
+<ResponseField name="socid" type="integer">
+  ID of the linked third party (customer).
+</ResponseField>
+
+<ResponseField name="date_valid" type="integer">
+  Validity date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Total amount excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Total amount including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Proposal status: `0` draft, `1` validated, `2` signed, `3` not signed, `4` billed.
+</ResponseField>
+
+<ResponseField name="lines" type="array">
+  Array of proposal line objects.
+</ResponseField>
+
+<ResponseField name="note_public" type="string">
+  Public-facing note.
+</ResponseField>
+
+<ResponseField name="note_private" type="string">
+  Internal note.
+</ResponseField>
+
+---
+
+## Update a proposal
+
+`PUT /proposals/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal to update.
+</ParamField>
+
+Supply any proposal fields in the request body. Only fields included in the payload are updated.
+
+---
+
+## Delete a proposal
+
+`DELETE /proposals/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal to delete.
+</ParamField>
+
+---
+
+## Validate a proposal
+
+`POST /proposals/{id}/validate`
+
+Transitions a draft proposal (`statut=0`) to validated (`statut=1`), making it active and sendable.
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal to validate.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/proposals/7/validate" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+## Close a proposal
+
+`POST /proposals/{id}/close`
+
+Closes a validated proposal as either won or lost.
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal to close.
+</ParamField>
+
+<ParamField body="status" type="integer" required>
+  `2` to close as won (signed), `3` to close as not signed (lost).
+</ParamField>
+
+<ParamField body="note_private" type="string">
+  Optional internal note to record with the closure.
+</ParamField>
+
+---
+
+## Add a line
+
+`POST /proposals/{id}/lines`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal.
+</ParamField>
+
+<ParamField body="fk_product" type="integer">
+  ID of the product or service. Omit for a free-text line.
+</ParamField>
+
+<ParamField body="qty" type="number" required>
+  Quantity.
+</ParamField>
+
+<ParamField body="subprice" type="number" required>
+  Unit price excluding tax.
+</ParamField>
+
+<ParamField body="tva_tx" type="number" required>
+  VAT rate as a percentage (e.g. `20` for 20%).
+</ParamField>
+
+<ParamField body="desc" type="string">
+  Line description.
+</ParamField>
+
+---
+
+## Update a line
+
+`PUT /proposals/{id}/lines/{lineid}`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal.
+</ParamField>
+
+<ParamField path="lineid" type="integer" required>
+  ID of the line to update.
+</ParamField>
+
+Supply updated line fields in the request body.
+
+---
+
+## Delete a line
+
+`DELETE /proposals/{id}/lines/{lineid}`
+
+<ParamField path="id" type="integer" required>
+  ID of the proposal.
+</ParamField>
+
+<ParamField path="lineid" type="integer" required>
+  ID of the line to delete.
+</ParamField>

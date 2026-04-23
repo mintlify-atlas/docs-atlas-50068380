@@ -1,97 +1,67 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Dolibarr ERP & CRM documentation hub"
+description: "Dolibarr is a modular, open-source ERP and CRM for businesses of any size. Manage contacts, invoices, orders, inventory, accounting, HR, and more."
 ---
 
-## Setting up
+Dolibarr ERP & CRM is an open-source web application that brings together everything your business needs — from managing customers and suppliers to handling invoices, inventory, payroll, projects, and accounting — in a single, modular platform. Built in PHP and designed for businesses of any size, Dolibarr lets you activate only the modules you need, keeping things simple while scaling as you grow.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Get Started" icon="rocket" href="/introduction">
+    Understand what Dolibarr offers and how to set it up for your business.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Installation" icon="server" href="/installation">
+    Install Dolibarr on your server, with Docker, or use a ready-made package.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Modules Overview" icon="puzzle-piece" href="/modules-overview">
+    Browse the 100+ built-in modules and learn how to activate the ones you need.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Integrate Dolibarr with external applications using the REST API.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Core capabilities
 
-Everything you need to create world-class documentation.
+Dolibarr covers the full business lifecycle in one platform, so your teams work from a single source of truth.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="CRM & Third Parties" icon="users" href="/features/crm-third-parties">
+    Manage customers, prospects, suppliers, and contacts with opportunity tracking.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Sales & Invoicing" icon="file-invoice-dollar" href="/features/sales-invoicing">
+    Create proposals, customer orders, invoices, and manage payments end-to-end.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Purchasing" icon="cart-shopping" href="/features/purchasing">
+    Handle supplier requests, purchase orders, receptions, and supplier invoices.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Inventory & Stock" icon="warehouse" href="/features/inventory">
+    Track products, warehouses, stock movements, batches, and serial numbers.
   </Card>
-</Columns>
+  <Card title="Accounting" icon="calculator" href="/features/accounting">
+    Manage bank accounts, SEPA transfers, tax reports, and full accounting ledgers.
+  </Card>
+  <Card title="HR & Expenses" icon="id-card" href="/features/hr-expenses">
+    Track employee leave, expense reports, recruitment, and timesheets.
+  </Card>
+</CardGroup>
 
-## Need inspiration?
+## Quick start
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Steps>
+  <Step title="Install Dolibarr">
+    Download the latest release and point your web server to the `htdocs/` directory, or pull the Docker image for a one-command setup. See [Installation](/installation) for full details.
+  </Step>
+  <Step title="Run the setup wizard">
+    Navigate to `/install/` in your browser and follow the on-screen wizard to configure your database and create the first admin account.
+  </Step>
+  <Step title="Activate modules">
+    Go to **Home → Setup → Modules** and turn on the features your business needs — CRM, invoicing, stock, accounting, and more. Everything else stays out of the way.
+  </Step>
+  <Step title="Import your data">
+    Use the built-in import tools to load existing customers, products, and suppliers, or start fresh and let your team populate data as they work.
+  </Step>
+</Steps>
+
+<Note>
+  Dolibarr is licensed under the GPL-3.0. You can freely use, study, modify, and distribute it. Community forums and [preferred commercial partners](https://partners.dolibarr.org) are available if you need additional support.
+</Note>

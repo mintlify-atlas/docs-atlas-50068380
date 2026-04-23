@@ -1,0 +1,247 @@
+---
+title: "REST API endpoints for third parties"
+description: "GET, POST, PUT, DELETE /thirdparties — manage customers, suppliers, and prospects. Key fields: name, client, fournisseur, code_client, country_id."
+---
+
+In Dolibarr, a third party (société) is the central business entity that combines customer, supplier, and prospect roles in a single record. Rather than maintaining separate contact lists, one third party record can simultaneously represent a customer you invoice, a supplier you purchase from, and a prospect in your sales pipeline. This unified model makes it easy to track all commercial relationships without duplication.
+
+**Base path:** `/api/index.php/thirdparties`
+
+All requests require a valid API token passed in the `DOLAPIKEY` header.
+
+---
+
+## List third parties
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by (e.g. `t.nom`, `t.datec`).
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction. `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Maximum number of records to return.
+</ParamField>
+
+<ParamField query="page" type="number" default="0">
+  Page number for pagination (zero-indexed).
+</ParamField>
+
+<ParamField query="mode" type="number" default="0">
+  Filter by role. `0` = all, `1` = customers, `2` = prospects, `3` = neither customer nor prospect, `4` = suppliers.
+</ParamField>
+
+<ParamField query="category" type="number">
+  Filter by category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL-style filter expression. Example: `(t.nom:like:'Acme%')`.
+</ParamField>
+
+<ParamField query="properties" type="string">
+  Comma-separated list of properties to include in the response. Returns all properties if omitted.
+</ParamField>
+
+<ParamField query="pagination_data" type="boolean" default="false">
+  When `true`, wraps the response in a `data` key and adds a `pagination` object.
+</ParamField>
+
+```bash List customers
+curl --request GET \
+  --url 'https://your-dolibarr.example.com/api/index.php/thirdparties?mode=1&limit=50' \
+  --header 'DOLAPIKEY: your_api_key'
+```
+
+---
+
+## Create a third party
+
+Send a JSON body with at minimum the `name` field. `email` is also required when the `SOCIETE_EMAIL_MANDATORY` setting is enabled.
+
+<ParamField body="name" type="string" required>
+  Legal or trading name of the third party.
+</ParamField>
+
+<ParamField body="client" type="number" default="0">
+  Customer flag. `0` = not a customer, `1` = customer, `2` = prospect, `3` = customer and prospect.
+</ParamField>
+
+<ParamField body="fournisseur" type="number" default="0">
+  Supplier flag. `0` = not a supplier, `1` = supplier.
+</ParamField>
+
+<ParamField body="code_client" type="string">
+  Customer reference code (auto-generated if omitted).
+</ParamField>
+
+<ParamField body="code_fournisseur" type="string">
+  Supplier reference code (auto-generated if omitted).
+</ParamField>
+
+<ParamField body="email" type="string">
+  Primary email address.
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Main phone number.
+</ParamField>
+
+<ParamField body="address" type="string">
+  Street address.
+</ParamField>
+
+<ParamField body="zip" type="string">
+  Postal / ZIP code.
+</ParamField>
+
+<ParamField body="town" type="string">
+  City or town.
+</ParamField>
+
+<ParamField body="country_id" type="number">
+  Numeric ID of the country (e.g. `1` for France). Use `GET /api/index.php/dictionaries/countries` to list available values.
+</ParamField>
+
+<ParamField body="status" type="number" default="1">
+  Account status. `1` = active, `0` = inactive.
+</ParamField>
+
+```bash Create a supplier
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/thirdparties' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "name": "Acme Supplies Ltd",
+    "fournisseur": 1,
+    "email": "purchasing@acme.example.com",
+    "country_id": 1
+  }'
+```
+
+**Response:** Returns the numeric ID of the created third party.
+
+---
+
+## Get a third party
+
+```text
+GET /thirdparties/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the third party to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="number">
+  Unique identifier.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Name of the third party.
+</ResponseField>
+
+<ResponseField name="client" type="number">
+  Customer flag. `0` = not a customer, `1` = customer, `2` = prospect, `3` = customer and prospect.
+</ResponseField>
+
+<ResponseField name="fournisseur" type="number">
+  Supplier flag. `0` = not a supplier, `1` = supplier.
+</ResponseField>
+
+<ResponseField name="code_client" type="string">
+  Customer reference code.
+</ResponseField>
+
+<ResponseField name="code_fournisseur" type="string">
+  Supplier reference code.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Primary email address.
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  Main phone number.
+</ResponseField>
+
+<ResponseField name="address" type="string">
+  Street address.
+</ResponseField>
+
+<ResponseField name="zip" type="string">
+  Postal / ZIP code.
+</ResponseField>
+
+<ResponseField name="town" type="string">
+  City or town.
+</ResponseField>
+
+<ResponseField name="country_id" type="number">
+  Numeric country ID.
+</ResponseField>
+
+<ResponseField name="status" type="number">
+  Account status. `1` = active, `0` = inactive.
+</ResponseField>
+
+---
+
+## Update a third party
+
+```text
+PUT /thirdparties/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the third party to update.
+</ParamField>
+
+Send only the fields you want to change in the request body. The same fields accepted by the create endpoint are accepted here.
+
+---
+
+## Delete a third party
+
+```text
+DELETE /thirdparties/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the third party to delete.
+</ParamField>
+
+<Warning>
+  Deleting a third party is irreversible. Ensure the record has no outstanding invoices or orders before deleting.
+</Warning>
+
+---
+
+## List contacts for a third party
+
+```text
+GET /thirdparties/{id}/contacts
+```
+
+Returns all contact persons linked to the specified third party.
+
+<ParamField path="id" type="number" required>
+  ID of the third party.
+</ParamField>
+
+---
+
+## List invoices for a third party
+
+```text
+GET /thirdparties/{id}/invoices
+```
+
+Returns all customer invoices associated with the specified third party.
+
+<ParamField path="id" type="number" required>
+  ID of the third party.
+</ParamField>

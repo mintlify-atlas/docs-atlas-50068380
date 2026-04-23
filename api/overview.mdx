@@ -1,0 +1,151 @@
+---
+title: "Dolibarr REST API overview"
+description: "Dolibarr exposes a REST API built on Luracast Restler. Explore endpoints, understand response formats, pagination, and error codes."
+---
+
+Dolibarr's REST API lets you integrate ERP data with any application. Built on the Luracast Restler 3 framework, all endpoints are reachable at `/api/index.php/` and return JSON. The API module must be enabled in **Home → Setup → Modules/Applications** before making any requests.
+
+<Note>
+  Always use HTTPS when calling the Dolibarr API. Sending tokens over plain HTTP exposes credentials and should never be done in any environment.
+</Note>
+
+## Base URL
+
+All API requests are made to:
+
+```text
+https://yourdomain.tld/api/index.php/
+```
+
+Replace `yourdomain.tld` with the hostname of your Dolibarr installation. The trailing slash is required when appending resource paths.
+
+## Enabling the API
+
+The REST API is a standard Dolibarr module. To enable it:
+
+1. Log in as an administrator.
+2. Go to **Home → Setup → Modules/Applications**.
+3. Find the **API** module and enable it.
+
+Once enabled, the API is immediately accessible at the base URL above.
+
+## API explorer
+
+Dolibarr ships with a built-in interactive API explorer powered by Swagger UI. Access it at:
+
+```text
+https://yourdomain.tld/api/index.php/explorer
+```
+
+The explorer lists every available endpoint, shows accepted parameters, and lets you execute requests directly in the browser — no code required. Enter your `DOLAPIKEY` token in the top-right field to authenticate.
+
+## Request format
+
+- **Protocol:** Standard HTTP/HTTPS
+- **Methods:** `GET`, `POST`, `PUT`, `DELETE`
+- **Request bodies:** JSON (`Content-Type: application/json`)
+- **Response bodies:** JSON
+- **CORS:** Enabled — the API sets `Access-Control-Allow-Origin: *` on all responses
+
+## Available resources
+
+<CardGroup cols={3}>
+  <Card title="Parties & contacts" icon="users">
+    `thirdparties`, `contacts`
+  </Card>
+  <Card title="Sales" icon="file-invoice">
+    `invoices`, `orders`, `proposals`, `shipments`
+  </Card>
+  <Card title="Purchasing" icon="cart-shopping">
+    `supplier_invoices`, `supplier_orders`
+  </Card>
+  <Card title="Products & stock" icon="box">
+    `products`, `warehouses`
+  </Card>
+  <Card title="Projects & time" icon="diagram-project">
+    `projects`, `tasks`
+  </Card>
+  <Card title="Finance" icon="building-columns">
+    `bankaccounts`
+  </Card>
+  <Card title="Contracts & members" icon="file-contract">
+    `contracts`, `members`
+  </Card>
+  <Card title="Support" icon="ticket">
+    `tickets`
+  </Card>
+  <Card title="Users" icon="user">
+    `users`
+  </Card>
+</CardGroup>
+
+## Response format
+
+All responses are JSON objects whose fields correspond to the PHP class properties of the underlying Dolibarr object. Sensitive and internal fields (such as `db`, `pass`, `linkedObjects`) are automatically stripped before the response is returned.
+
+Example response for a thirdparty:
+
+```json
+{
+  "id": 42,
+  "name": "Acme Corp",
+  "email": "contact@acme.example",
+  "phone": "+1 555 0100",
+  "status": 1
+}
+```
+
+## Pagination
+
+List endpoints support two query parameters to page through results:
+
+| Parameter | Type    | Default | Description                        |
+| --------- | ------- | ------- | ---------------------------------- |
+| `limit`   | integer | 100     | Maximum number of records returned |
+| `page`    | integer | 0       | Zero-based page index              |
+
+Example — fetch the second page of 25 invoices:
+
+```
+GET /api/index.php/invoices?limit=25&page=1
+```text
+
+## Filtering and sorting
+
+Most list endpoints accept the following query parameters:
+
+| Parameter    | Description                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| `sqlfilters` | Advanced filter expression. Example: `(t.ref:like:'FA-%') and (t.datec:>=:'2024-01-01')`         |
+| `sortfield`  | Field name to sort by. Example: `t.date_creation`                                                |
+| `sortorder`  | Sort direction: `ASC` or `DESC`                                                                   |
+| `properties` | Comma-separated list of field names to include in the response, reducing payload size             |
+
+## Error responses
+
+The API uses standard HTTP status codes. When a request fails, the response body contains an `error` object with a `code` and a human-readable `message`.
+
+| Status | Meaning               | When it occurs                                          |
+| ------ | --------------------- | ------------------------------------------------------- |
+| 200    | OK                    | Successful `GET`, `PUT`, or `DELETE`                    |
+| 201    | Created               | Successful `POST` that created a new resource           |
+| 400    | Bad Request           | Invalid parameters or malformed request body            |
+| 401    | Unauthorized          | Missing or invalid `DOLAPIKEY` token                    |
+| 403    | Forbidden             | Token is valid but the user lacks the required permission |
+| 404    | Not Found             | Resource does not exist                                 |
+| 500    | Internal Server Error | Unexpected server-side error                            |
+
+Example error body:
+
+```json
+{
+  "error": {
+    "code": 404,
+    "message": "Thirdparty not found"
+  }
+}
+```
+
+## Rate limiting
+
+Dolibarr does not include built-in API rate limiting. For production deployments, configure rate limiting at the proxy or web server level (for example, using nginx's `limit_req` directive or a reverse proxy such as Traefik) to protect the application from excessive request volumes.

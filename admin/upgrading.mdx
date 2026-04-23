@@ -1,0 +1,284 @@
+---
+title: "Upgrade Dolibarr to a newer version"
+description: "Safely upgrade Dolibarr from any version after 2.8 to the latest release with backup, file replacement, and the upgrade wizard."
+---
+
+Dolibarr's upgrade path is one of its most user-appreciated features: the system supports in-place upgrades from any version released after 2.8 without data loss or the need for paid support. The upgrade wizard handles all database schema migrations automatically, so a multi-year gap between your installed version and the target version is handled in a single run. That said, upgrades must be done carefully — a failed upgrade without a backup is unrecoverable.
+
+<Tip>
+Test the upgrade on a staging copy of your production database before applying it to production. Restore a backup of the production database into a staging environment, run the full upgrade procedure there, verify the result, and only then repeat the process on production.
+</Tip>
+
+---
+
+## Upgrade philosophy
+
+- **No data loss across any version since 2.8** — the schema migration scripts are cumulative and sequential; Dolibarr applies every migration step between your old version and the new one in order.
+- **No skipping major versions required** — you do not need to upgrade to each intermediate major version; go directly from your current version to the target.
+- **No paid support required** — the upgrade wizard is built in and fully self-service.
+- **Custom data is preserved** — custom fields (extra fields), custom module data, and uploaded documents survive the upgrade provided you follow the file overwrite instructions correctly.
+
+---
+
+## Pre-upgrade checklist
+
+Complete every item on this checklist before touching any files.
+
+<Steps>
+  <Step title="Read the release notes">
+    Download the new version and read its `ChangeLog` file and any upgrade notes in the documentation. Pay attention to:
+    - Removed or renamed modules
+    - Deprecated PHP functions or configurations
+    - Changes that require post-upgrade manual actions
+  </Step>
+  <Step title="Verify PHP version compatibility">
+    Check the [Dolibarr releases page](https://wiki.dolibarr.org/index.php/Releases) to confirm your server's PHP version is supported by the target Dolibarr version. Running an unsupported PHP version will cause immediate errors after the file replacement step.
+
+    ```bash
+    php -v
+    ```
+  </Step>
+  <Step title="Back up the database">
+    Run a full database dump and store it off the server:
+
+    ```bash
+    mysqldump -u root -p --single-transaction dolibarr \
+      > dolibarr_backup_$(date +%Y%m%d_%H%M%S).sql
+    ```
+
+    For PostgreSQL:
+
+    ```bash
+    pg_dump -U postgres dolibarr \
+      > dolibarr_backup_$(date +%Y%m%d_%H%M%S).sql
+    ```
+  </Step>
+  <Step title="Back up documents and configuration">
+    ```bash
+    # Uploaded files and generated PDFs
+    tar -czf documents_backup_$(date +%Y%m%d).tar.gz /path/to/documents/
+
+    # Instance configuration (contains database credentials)
+    cp htdocs/conf/conf.php ~/conf.php.bak
+    ```
+  </Step>
+  <Step title="Back up custom modules">
+    If you have third-party modules installed in `htdocs/custom/`:
+
+    ```bash
+    tar -czf custom_backup_$(date +%Y%m%d).tar.gz htdocs/custom/
+    ```
+  </Step>
+  <Step title="Put the site in maintenance mode (optional)">
+    To prevent users from creating records while the upgrade is in progress, either:
+    - Create an `htaccess` rule that returns a 503 and a maintenance HTML page for all requests except your own IP
+    - Stop the web server process temporarily
+
+    This step is optional for low-traffic installations but strongly recommended for multi-user production environments.
+  </Step>
+</Steps>
+
+---
+
+## Upgrade steps
+
+<Steps>
+  <Step title="Download the new version">
+    Download the official release archive from [https://www.dolibarr.org/download](https://www.dolibarr.org/download) or from the GitHub releases page. Verify the checksum if one is published.
+
+    ```bash
+    wget https://github.com/Dolibarr/dolibarr/archive/refs/tags/XX.0.0.tar.gz
+    tar -xzf XX.0.0.tar.gz
+    ```
+  </Step>
+  <Step title="Overwrite the application files">
+    Copy the new `htdocs/` directory over your existing installation. **Do not overwrite** `htdocs/conf/conf.php` or the `documents/` directory.
+
+    ```bash
+    # Overwrite all application files
+    rsync -av --exclude='conf/conf.php' \
+      dolibarr-XX.0.0/htdocs/ /var/www/html/dolibarr/htdocs/
+
+    # Custom modules survive if you excluded htdocs/custom/ from rsync
+    # or restore them now:
+    # tar -xzf custom_backup_YYYYMMDD.tar.gz -C /var/www/html/dolibarr/
+    ```
+
+    <Warning>
+    Never overwrite `htdocs/conf/conf.php`. It contains your database connection string, encryption keys, and instance-specific settings. Overwriting it with the blank template from the new archive will break your installation immediately.
+    </Warning>
+  </Step>
+  <Step title="Remove install.lock if present">
+    Dolibarr creates an `install.lock` file in the documents directory after a successful installation or previous upgrade to prevent accidental re-runs of the installer. You must remove it before the upgrade wizard will run.
+
+    ```bash
+    # The lock file is in the documents directory, not in htdocs/
+    rm /path/to/documents/install.lock
+    ```
+
+    If you cannot find it, search the documents directory:
+
+    ```bash
+    find /path/to/documents -name install.lock
+    ```
+  </Step>
+  <Step title="Run the upgrade wizard">
+    Navigate to your Dolibarr URL in a browser. If the file replacement succeeded and `install.lock` was removed, Dolibarr automatically detects the version mismatch and redirects you to:
+
+    ```
+    https://your-dolibarr-url/install/upgrade.php
+    ```
+
+    Follow the on-screen wizard steps:
+    1. Confirm the source and target versions shown
+    2. The wizard runs all database migration scripts sequentially
+    3. A green success message confirms completion
+    4. The wizard re-creates `install.lock` automatically on success
+  </Step>
+  <Step title="Test the upgraded installation">
+    Before restoring normal user access, verify:
+
+    - [ ] Login works with existing admin credentials
+    - [ ] Previously created invoices, orders, and third parties are visible and correct
+    - [ ] Enabled modules are still enabled and their configuration is intact
+    - [ ] PDF generation works for at least one invoice
+    - [ ] Email sending works (send a test from Setup → Emails)
+    - [ ] Any custom modules still load without PHP errors (check the PHP error log)
+    - [ ] API calls return expected data (if you use the REST API)
+  </Step>
+</Steps>
+
+---
+
+## Upgrading a Docker installation
+
+<Tabs>
+  <Tab title="Official Docker image">
+    The official Dolibarr Docker image (`dolibarr/dolibarr`) uses named volumes for the database and the documents directory, so the upgrade procedure is:
+
+    ```bash
+    # Pull the new image tag
+    docker pull dolibarr/dolibarr:XX.0.0
+
+    # Stop and remove the old container (volumes are preserved)
+    docker stop dolibarr && docker rm dolibarr
+
+    # Start a new container with the same volumes and the new image
+    docker run -d \
+      --name dolibarr \
+      -p 80:80 \
+      -v dolibarr_documents:/var/www/documents \
+      -v dolibarr_db:/var/lib/mysql \
+      dolibarr/dolibarr:XX.0.0
+    ```
+
+    On first start with the new image, the container detects the version mismatch and runs the upgrade wizard automatically in non-interactive mode. Check `docker logs dolibarr` to confirm the upgrade completed successfully.
+  </Tab>
+  <Tab title="Docker Compose">
+    Update the image tag in your `docker-compose.yml`:
+
+    ```yaml
+    services:
+      dolibarr:
+        image: dolibarr/dolibarr:XX.0.0   # ← update this line
+        volumes:
+          - dolibarr_documents:/var/www/documents
+        ...
+    ```
+
+    Then:
+
+    ```bash
+    # Pull the new image and recreate the container
+    docker compose pull
+    docker compose up -d
+    ```
+
+    Volumes are preserved across container recreation.
+  </Tab>
+</Tabs>
+
+<Warning>
+Back up your Docker volumes before pulling a new image, especially the database volume. Docker volume backups are not automatic.
+
+```bash
+docker run --rm \
+  -v dolibarr_db:/source \
+  -v $(pwd):/backup \
+  alpine tar -czf /backup/db_backup_$(date +%Y%m%d).tar.gz -C /source .
+```
+</Warning>
+
+---
+
+## Rolling back
+
+There is no automated rollback mechanism. If the upgrade fails or produces incorrect behavior, the recovery procedure is:
+
+1. Stop the web server to prevent further data changes.
+2. Restore the pre-upgrade database backup:
+   ```bash
+   mysql -u root -p dolibarr < dolibarr_backup_YYYYMMDD_HHMMSS.sql
+   ```
+3. Restore the old application files (either from a file backup or by re-extracting the previous version archive, excluding `conf.php` and `documents/`).
+4. Remove the `install.lock` file again (the failed upgrade may have created a corrupt one).
+5. Restart the web server and verify the previous version is working.
+
+This is why the staging-server test is so important: it lets you discover upgrade problems without ever risking production data.
+
+---
+
+## Common upgrade issues
+
+<AccordionGroup>
+  <Accordion title="PHP version mismatch">
+    **Symptom:** Blank page or PHP fatal error immediately after file replacement.
+
+    **Cause:** The new Dolibarr version requires a newer PHP version than what is installed on the server.
+
+    **Fix:** Upgrade PHP to a supported version before overwriting Dolibarr files. Check the PHP compatibility matrix at [https://wiki.dolibarr.org/index.php/Releases](https://wiki.dolibarr.org/index.php/Releases).
+  </Accordion>
+  <Accordion title="Permission errors on files">
+    **Symptom:** Upgrade wizard shows errors writing to the database or generating files.
+
+    **Cause:** The new files were uploaded with the wrong owner, or the `documents/` directory is not writable by the web server user.
+
+    **Fix:**
+    ```bash
+    # Set ownership to the web server user (commonly www-data on Debian/Ubuntu)
+    chown -R www-data:www-data /var/www/html/dolibarr/htdocs/
+    chown -R www-data:www-data /path/to/documents/
+    chmod -R 755 /var/www/html/dolibarr/htdocs/
+    chmod -R 750 /path/to/documents/
+    ```
+  </Accordion>
+  <Accordion title="install.lock not found / wizard does not appear">
+    **Symptom:** Navigating to the Dolibarr URL after file replacement loads the normal interface instead of redirecting to the upgrade wizard.
+
+    **Cause:** The `install.lock` file was not removed, or the version number in the new files matches the old version (wrong archive downloaded).
+
+    **Fix:** Confirm you downloaded the correct target version archive. Then find and delete `install.lock`:
+    ```bash
+    find /path/to/documents -name install.lock -delete
+    ```
+  </Accordion>
+  <Accordion title="Missing PHP extensions">
+    **Symptom:** Upgrade wizard reports missing PHP extensions or functions.
+
+    **Cause:** The new Dolibarr version requires a PHP extension that is installed on the server but not enabled, or not installed at all.
+
+    **Fix:** Check the requirements for the new version and install or enable the missing extension:
+    ```bash
+    # Example for common extensions on Debian/Ubuntu
+    apt-get install php-gd php-curl php-mbstring php-intl php-zip
+    systemctl restart apache2   # or php-fpm
+    ```
+  </Accordion>
+  <Accordion title="Custom module errors after upgrade">
+    **Symptom:** A custom or marketplace module throws PHP errors or disappears from the module list after upgrade.
+
+    **Cause:** The module uses internal Dolibarr APIs that changed between versions.
+
+    **Fix:** Check the module vendor's changelog for a version compatible with your new Dolibarr version. Disable the affected module, upgrade it, and re-enable it. If no compatible version exists, contact the module vendor.
+  </Accordion>
+</AccordionGroup>

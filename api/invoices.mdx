@@ -1,0 +1,361 @@
+---
+title: "REST API endpoints for customer invoices"
+description: "GET, POST, PUT, DELETE /invoices — create and manage customer invoices, add lines, validate, and record payments via the Dolibarr REST API."
+---
+
+Customer invoices in Dolibarr move through a defined lifecycle: a new invoice starts as a **draft** (`statut = 0`) where lines can be freely added and modified, then it is **validated** (`statut = 1`) which locks the content and assigns the final reference number, and finally it becomes **paid** (`statut = 2`) once all payments are recorded. The API mirrors this lifecycle, exposing dedicated actions for validation and payment alongside the standard CRUD operations.
+
+**Base path:** `/api/index.php/invoices`
+
+All requests require a valid API token passed in the `DOLAPIKEY` header.
+
+---
+
+## List invoices
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction. `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Maximum number of records to return.
+</ParamField>
+
+<ParamField query="page" type="number" default="0">
+  Page number for pagination (zero-indexed).
+</ParamField>
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of third party IDs to filter invoices by. Example: `1` or `1,2,3`.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by invoice status. `0` = draft, `1` = validated, `2` = paid, `3` = abandoned.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL-style filter expression. Example: `(t.ref:like:'FA-%')`.
+</ParamField>
+
+---
+
+## Create an invoice
+
+The only mandatory field is `socid`. Include a `lines` array to add product or service lines at creation time.
+
+<ParamField body="socid" type="number" required>
+  ID of the third party (customer) to invoice.
+</ParamField>
+
+<ParamField body="date" type="number">
+  Invoice date as a Unix timestamp. Defaults to today if omitted.
+</ParamField>
+
+<ParamField body="date_echeance" type="number">
+  Payment due date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="lines" type="object[]">
+  Array of invoice line objects.
+
+  <Expandable title="line properties">
+    <ParamField body="fk_product" type="number">
+      ID of the product or service. Leave empty for a free-text line.
+    </ParamField>
+    <ParamField body="product_label" type="string">
+      Description shown on the line (auto-filled from product if `fk_product` is set).
+    </ParamField>
+    <ParamField body="qty" type="number" required>
+      Quantity.
+    </ParamField>
+    <ParamField body="subprice" type="number" required>
+      Unit price excluding tax.
+    </ParamField>
+    <ParamField body="tva_tx" type="number">
+      VAT rate as a percentage (e.g. `20` for 20 %).
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```bash Create an invoice with lines
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/invoices' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "socid": 42,
+    "date": 1745280000,
+    "date_echeance": 1747872000,
+    "lines": [
+      {
+        "fk_product": 7,
+        "qty": 3,
+        "subprice": 50.00,
+        "tva_tx": 20
+      },
+      {
+        "product_label": "Delivery charge",
+        "qty": 1,
+        "subprice": 15.00,
+        "tva_tx": 20
+      }
+    ]
+  }'
+```
+
+**Response:** Returns the numeric ID of the created invoice.
+
+---
+
+## Get an invoice
+
+```
+GET /invoices/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the invoice.
+</ParamField>
+
+<ParamField query="withLines" type="boolean" default="true">
+  When `false`, line items are excluded from the response.
+</ParamField>
+
+<ResponseField name="id" type="number">
+  Unique identifier.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Invoice reference (e.g. `FA2024-0001`). Assigned on validation.
+</ResponseField>
+
+<ResponseField name="socid" type="number">
+  ID of the third party.
+</ResponseField>
+
+<ResponseField name="date" type="number">
+  Invoice date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="date_echeance" type="number">
+  Payment due date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Total amount excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Total amount including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="number">
+  Invoice status. `0` = draft, `1` = validated, `2` = paid, `3` = abandoned.
+</ResponseField>
+
+<ResponseField name="lines" type="object[]">
+  Array of line items.
+
+  <Expandable title="line properties">
+    <ResponseField name="fk_product" type="number">
+      ID of the linked product or service.
+    </ResponseField>
+    <ResponseField name="product_ref" type="string">
+      Product reference code.
+    </ResponseField>
+    <ResponseField name="product_label" type="string">
+      Line description.
+    </ResponseField>
+    <ResponseField name="qty" type="number">
+      Quantity.
+    </ResponseField>
+    <ResponseField name="subprice" type="number">
+      Unit price excluding tax.
+    </ResponseField>
+    <ResponseField name="tva_tx" type="number">
+      VAT rate as a percentage.
+    </ResponseField>
+    <ResponseField name="total_ht" type="number">
+      Line total excluding tax.
+    </ResponseField>
+    <ResponseField name="total_ttc" type="number">
+      Line total including tax.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Update a draft invoice
+
+```
+PUT /invoices/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the draft invoice to update.
+</ParamField>
+
+<Warning>
+  Only draft invoices (`statut = 0`) can be updated. Validated or paid invoices must be cancelled and recreated if corrections are required.
+</Warning>
+
+---
+
+## Delete a draft invoice
+
+```
+DELETE /invoices/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the draft invoice to delete.
+</ParamField>
+
+---
+
+## Validate an invoice
+
+```
+POST /invoices/{id}/validate
+```text
+
+Changes a draft invoice to validated status, locks its content, and assigns the final reference number.
+
+<ParamField path="id" type="number" required>
+  ID of the draft invoice to validate.
+</ParamField>
+
+<ParamField body="idwarehouse" type="number">
+  Warehouse ID for stock movement, if applicable.
+</ParamField>
+
+```
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/invoices/15/validate' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{}'
+```
+
+---
+
+## Record a payment
+
+```text
+POST /invoices/{id}/payments
+```
+
+Records a payment against a validated invoice. When the payment fully covers the remaining balance, the invoice status automatically changes to paid (`statut = 2`).
+
+<ParamField path="id" type="number" required>
+  ID of the invoice.
+</ParamField>
+
+<ParamField body="datepaye" type="number" required>
+  Payment date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="payment_mode_id" type="number" required>
+  ID of the payment method. Use `GET /api/index.php/dictionaries/payment_types` to list available values.
+</ParamField>
+
+<ParamField body="closepaidinvoices" type="string">
+  Set to `yes` to automatically close the invoice when the amount paid matches the total due.
+</ParamField>
+
+<ParamField body="accountid" type="number">
+  ID of the bank account to record the payment against.
+</ParamField>
+
+<ParamField body="num_payment" type="string">
+  Payment reference number (e.g. cheque number or wire transfer ID).
+</ParamField>
+
+<ParamField body="multicurrency_amount" type="number">
+  Amount paid in the transaction currency, if different from the invoice currency.
+</ParamField>
+
+```bash Record a payment
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/invoices/15/payments' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "datepaye": 1745366400,
+    "payment_mode_id": 6,
+    "closepaidinvoices": "yes",
+    "accountid": 1,
+    "num_payment": "WIRE-2024-0042"
+  }'
+```
+
+---
+
+## Add a line to an invoice
+
+```
+POST /invoices/{id}/lines
+```text
+
+Adds a new line to a draft invoice.
+
+<ParamField path="id" type="number" required>
+  ID of the draft invoice.
+</ParamField>
+
+<ParamField body="fk_product" type="number">
+  Product or service ID.
+</ParamField>
+
+<ParamField body="product_label" type="string">
+  Line description (used when no product is linked).
+</ParamField>
+
+<ParamField body="qty" type="number" required>
+  Quantity.
+</ParamField>
+
+<ParamField body="subprice" type="number" required>
+  Unit price excluding tax.
+</ParamField>
+
+<ParamField body="tva_tx" type="number">
+  VAT rate as a percentage.
+</ParamField>
+
+---
+
+## Update a line
+
+```
+PUT /invoices/{id}/lines/{lineid}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the invoice.
+</ParamField>
+
+<ParamField path="lineid" type="number" required>
+  ID of the line to update.
+</ParamField>
+
+---
+
+## Delete a line
+
+```
+DELETE /invoices/{id}/lines/{lineid}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the invoice.
+</ParamField>
+
+<ParamField path="lineid" type="number" required>
+  ID of the line to remove.
+</ParamField>

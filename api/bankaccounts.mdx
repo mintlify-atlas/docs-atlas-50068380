@@ -1,0 +1,239 @@
+---
+title: "REST API endpoints for bank accounts"
+description: "GET, POST, PUT, DELETE /bankaccounts — manage Dolibarr bank accounts, record transactions, create internal transfers, and check account balances."
+---
+
+Dolibarr's bank accounts API lets you create and manage bank and cash accounts, post manual transactions to them, create internal wire transfers between accounts, and retrieve account balances. Bank accounts are used throughout Dolibarr to record payments on invoices and supplier bills.
+
+**Base path:** `/api/index.php/bankaccounts`
+
+<Note>
+  Creating a bank account via the API requires the `banque → configurer` permission. Reading accounts requires `banque → lire`.
+</Note>
+
+---
+
+## List bank accounts
+
+`GET /bankaccounts`
+
+Returns all bank accounts for your entity.
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Zero-based page number.
+</ParamField>
+
+<ParamField query="category" type="integer">
+  Filter by bank account category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Advanced filter expression. Example: `(t.ref:like:'BNK-%')`.
+</ParamField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/bankaccounts" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## Get a bank account
+
+`GET /bankaccounts/{id}`
+
+<ParamField path="id" type="integer" required>
+  Bank account ID.
+</ParamField>
+
+<ResponseField name="id" type="integer">Account ID.</ResponseField>
+<ResponseField name="ref" type="string">Account reference code.</ResponseField>
+<ResponseField name="label" type="string">Account display name.</ResponseField>
+<ResponseField name="type" type="string">Account type: `BANK`, `CASH`, `CREDITCARD`.</ResponseField>
+<ResponseField name="currency_code" type="string">ISO currency code (e.g. `EUR`, `USD`).</ResponseField>
+<ResponseField name="country_id" type="integer">Country ID for the account.</ResponseField>
+<ResponseField name="balance" type="number">Current calculated balance.</ResponseField>
+<ResponseField name="iban" type="string">IBAN number.</ResponseField>
+<ResponseField name="bic" type="string">BIC/SWIFT code.</ResponseField>
+
+---
+
+## Create a bank account
+
+`POST /bankaccounts`
+
+Required fields: `ref`, `label`, `type`, `currency_code`, `country_id`.
+
+<ParamField body="ref" type="string" required>
+  Unique reference code for the account (e.g. `BNK-EUR-001`).
+</ParamField>
+
+<ParamField body="label" type="string" required>
+  Display name for the account.
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Account type: `BANK`, `CASH`, or `CREDITCARD`.
+</ParamField>
+
+<ParamField body="currency_code" type="string" required>
+  ISO 4217 currency code (e.g. `EUR`, `USD`, `GBP`).
+</ParamField>
+
+<ParamField body="country_id" type="integer" required>
+  Country ID. Corresponds to the `llx_c_country` table.
+</ParamField>
+
+<ParamField body="iban" type="string">
+  IBAN number for the account.
+</ParamField>
+
+<ParamField body="bic" type="string">
+  BIC/SWIFT code.
+</ParamField>
+
+```bash
+curl -X POST "https://yourdomain.tld/api/index.php/bankaccounts" \
+  -H "DOLAPIKEY: your_api_token_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ref": "BNK-EUR-001",
+    "label": "Main Business Account",
+    "type": "BANK",
+    "currency_code": "EUR",
+    "country_id": 1
+  }'
+```
+
+---
+
+## Update a bank account
+
+`PUT /bankaccounts/{id}`
+
+Pass any fields you want to update. Returns the updated account object.
+
+---
+
+## Delete a bank account
+
+`DELETE /bankaccounts/{id}`
+
+<Warning>
+  Deleting a bank account is permanent and cannot be undone. Ensure no unreconciled transactions are linked to the account before deleting.
+</Warning>
+
+---
+
+## Get account balance
+
+`GET /bankaccounts/{id}/balance`
+
+Returns the current balance for the specified account.
+
+<ParamField path="id" type="integer" required>
+  Bank account ID.
+</ParamField>
+
+<ResponseField name="balance" type="number">
+  Current account balance in the account's currency.
+</ResponseField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/bankaccounts/1/balance" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## List account transactions
+
+`GET /bankaccounts/{id}/lines`
+
+Returns all transaction lines for the specified account.
+
+<ParamField path="id" type="integer" required>
+  Bank account ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Advanced filter expression. Example: `(t.datev:>=:'2024-01-01')`.
+</ParamField>
+
+<ResponseField name="id" type="integer">Transaction line ID.</ResponseField>
+<ResponseField name="datev" type="integer">Value date (Unix timestamp).</ResponseField>
+<ResponseField name="label" type="string">Transaction description.</ResponseField>
+<ResponseField name="amount" type="number">Transaction amount (positive = credit, negative = debit).</ResponseField>
+<ResponseField name="num_releve" type="string">Bank statement number this line belongs to.</ResponseField>
+
+---
+
+## Add a transaction line
+
+`POST /bankaccounts/{id}/lines`
+
+Manually posts a transaction to the account.
+
+<ParamField path="id" type="integer" required>Bank account ID.</ParamField>
+<ParamField body="date" type="integer" required>Transaction date as Unix timestamp.</ParamField>
+<ParamField body="type" type="string" required>Transaction type code (e.g. `VIR` for wire transfer, `CHQ` for cheque).</ParamField>
+<ParamField body="label" type="string" required>Transaction description.</ParamField>
+<ParamField body="amount" type="number" required>Amount. Positive for credit, negative for debit.</ParamField>
+<ParamField body="num_releve" type="string">Bank statement number for reconciliation.</ParamField>
+
+---
+
+## Internal wire transfer
+
+`POST /bankaccounts/transfer`
+
+Creates an internal transfer between two bank accounts in Dolibarr.
+
+<ParamField body="bankaccount_from_id" type="integer" required>
+  Source bank account ID.
+</ParamField>
+
+<ParamField body="bankaccount_to_id" type="integer" required>
+  Destination bank account ID.
+</ParamField>
+
+<ParamField body="date" type="integer" required>
+  Transfer date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Description of the transfer.
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  Amount to transfer from the source account.
+</ParamField>
+
+<ParamField body="amount_to" type="number">
+  Amount to credit to the destination account. Required when the two accounts have different currencies.
+</ParamField>
+
+```bash
+curl -X POST "https://yourdomain.tld/api/index.php/bankaccounts/transfer" \
+  -H "DOLAPIKEY: your_api_token_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bankaccount_from_id": 1,
+    "bankaccount_to_id": 2,
+    "date": 1704067200,
+    "description": "Monthly petty cash transfer",
+    "amount": 500.00
+  }'
+```

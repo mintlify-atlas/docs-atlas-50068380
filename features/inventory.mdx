@@ -1,0 +1,181 @@
+---
+title: "Inventory and warehouse management"
+description: "Track stock levels across multiple warehouses, manage product lots and serial numbers, set reorder points, and run physical inventory counts in Dolibarr."
+---
+
+Dolibarr's inventory system centres on a unified product and services catalog that feeds into every module — sales, purchasing, manufacturing, and accounting. Stock movements are always traceable to their source document, giving you an accurate, real-time view of what you have, where it is, and where it came from.
+
+## Products and services catalog
+
+All inventory items are defined in **Products → Catalog**.
+
+<CardGroup cols={2}>
+  <Card title="Products" icon="box">
+    Physical items that occupy warehouse space. Stock levels are tracked, and movements are recorded on every inbound or outbound transaction.
+  </Card>
+  <Card title="Services" icon="wrench">
+    Intangible offerings billed by time or unit. Services have no stock level; they appear on proposals, orders, and invoices without generating warehouse movements.
+  </Card>
+</CardGroup>
+
+### Key catalog fields
+
+| Field | Description |
+|---|---|
+| **Reference** | Unique internal code used on documents and barcodes. |
+| **Label** | Display name printed on documents. |
+| **Unit of measure** | EA, KG, L, M, etc. Configured in **Setup → Dictionaries → Units**. |
+| **Sell price / Buy price** | Default prices; can be overridden per customer or supplier. |
+| **VAT rate** | Default tax rate applied on document lines. |
+| **Product type** | Product (stock tracked) or Service (no stock). |
+
+## Warehouses
+
+Enable multiple warehouses at **Setup → Modules → Stocks**.
+
+<Steps>
+  <Step title="Create a warehouse">
+    Go to **Stocks → Warehouses → New warehouse**. Set a code, label, and address. Optionally assign a parent warehouse for hierarchical grouping (main store → shelf A1, etc.).
+  </Step>
+  <Step title="Assign a default warehouse">
+    Under **Setup → Stocks**, set a default warehouse. This pre-fills on new orders, receptions, and manual stock movements.
+  </Step>
+  <Step title="Check stock per warehouse">
+    On any product record, the **Stock** tab shows current levels broken down by warehouse.
+  </Step>
+</Steps>
+
+<Note>
+Each warehouse can have its own permission set. You can restrict which users can create stock movements for a given warehouse.
+</Note>
+
+## Stock movements
+
+Every change to a product's stock quantity is recorded as a movement with a reason code, date, user, and linked document.
+
+<Tabs>
+  <Tab title="Manual entry">
+    Go to **Stocks → New stock movement**. Select the product, warehouse, quantity (positive to increase, negative to decrease), and a reason (inventory correction, internal consumption, etc.). Add an optional batch/lot number if the product uses batch tracking.
+  </Tab>
+  <Tab title="From a reception">
+    Validating a goods reception automatically creates an **increase** movement in the target warehouse for every received line.
+  </Tab>
+  <Tab title="From a shipment">
+    Validating a customer shipment creates a **decrease** movement from the source warehouse.
+  </Tab>
+  <Tab title="From manufacturing">
+    Completing a manufacturing order decreases component stock and increases finished-goods stock.
+  </Tab>
+</Tabs>
+
+## Product variants
+
+Enable **Product Variants** at **Setup → Modules → Product Variants** to manage size, colour, or any other attribute combination under a single parent product.
+
+- Define variant attributes (e.g. Size: S, M, L, XL) at **Products → Attributes**.
+- On the parent product, open the **Variants** tab and generate all combinations automatically.
+- Each variant gets its own stock level; they share the parent's base price but can have price adjustments per variant.
+
+## Lots and serial numbers
+
+Enable **Product Batches** at **Setup → Modules → Product batches** for traceability.
+
+<AccordionGroup>
+  <Accordion title="Configuring a product for batch tracking">
+    Open the product and go to the **Batch/Serial** tab. Set **Tracking mode** to:
+    - **By lot** — group of identical units sharing one lot number
+    - **By serial number** — unique identification per individual unit
+  </Accordion>
+  <Accordion title="Assigning lots on reception">
+    When validating a goods reception, a **Lot/Serial** column appears. Enter the supplier's lot number and optional expiry date. Dolibarr creates the lot record automatically if it does not exist.
+  </Accordion>
+  <Accordion title="FIFO and FEFO picking">
+    On outbound movements (shipments, manufacturing consumption), Dolibarr can suggest which lots to consume based on:
+    - **FIFO** (first in, first out) — oldest receipt date consumed first
+    - **FEFO** (first expired, first out) — nearest expiry date consumed first
+
+    Configure the picking method at **Setup → Stocks → Stock movement method**.
+  </Accordion>
+  <Accordion title="Lot traceability report">
+    Navigate to **Stocks → Lots / Serial numbers** and search by lot number to see its full movement history: what was received, when, from which supplier, and to which orders it was dispatched.
+  </Accordion>
+</AccordionGroup>
+
+## Bill of Materials (BOM)
+
+A Bill of Materials defines the components required to produce one unit of a finished product. Enable the **BOM** module at **Setup → Modules → Bill of Materials**.
+
+- Go to **Manufacturing → Bills of materials → New BOM**.
+- Set the finished product, the quantity produced, and add component lines (product + quantity).
+- A BOM can include sub-assemblies (nested BOMs) for multi-level manufacturing.
+
+<Tip>
+You can also define a BOM for **virtual kits** — bundles sold as a single SKU but deducted as individual components at time of shipment, without a manufacturing order.
+</Tip>
+
+## Manufacturing orders (MRP)
+
+Enable **Manufacturing Orders** at **Setup → Modules → Manufacturing orders**.
+
+<Steps>
+  <Step title="Create a manufacturing order">
+    Go to **Manufacturing → New manufacturing order**. Select the finished product, the BOM to use, the target quantity, and the planned production date.
+  </Step>
+  <Step title="Check component availability">
+    Dolibarr displays component stock versus required quantity. Shortfalls are highlighted so you can place purchase orders before starting production.
+  </Step>
+  <Step title="Produce">
+    Click **Consume & Produce** to record component consumption and finished-goods production in a single step. This creates the corresponding stock movements.
+  </Step>
+  <Step title="Track progress">
+    For longer runs, record partial production by entering quantities produced to date. The manufacturing order stays open until the target quantity is fully produced.
+  </Step>
+</Steps>
+
+## Physical inventory count
+
+Run a stock inventory to reconcile system quantities against actual counts.
+
+<Steps>
+  <Step title="Create an inventory">
+    Go to **Stocks → Inventory → New inventory**. Set a label, the date, and filter by warehouse or product category if you want a partial count.
+  </Step>
+  <Step title="Print count sheets">
+    Generate a PDF of blank count sheets to hand to warehouse staff. The sheet lists products and locations without current quantities to avoid bias.
+  </Step>
+  <Step title="Enter counted quantities">
+    Return to the inventory record and enter the counted quantity for each line. Dolibarr shows the system quantity alongside for comparison.
+  </Step>
+  <Step title="Validate and post corrections">
+    Click **Validate**. Dolibarr creates adjustment movements (increase or decrease) for every line where counted differs from system quantity. These movements use the reason code **Inventory correction**.
+  </Step>
+</Steps>
+
+<Warning>
+Validate an inventory only when you are confident in the counted figures. Validation is not reversible — adjustments are posted immediately.
+</Warning>
+
+## Reorder alerts
+
+Set minimum stock thresholds to receive alerts when products run low.
+
+- On each product, set **Stock alert quantity** (minimum threshold) in the **Stock** tab.
+- View all products below their threshold at **Stocks → Products below reorder point** (backed by `reassort.php`).
+- For lot-tracked products, `reassortlot.php` shows the same view broken down by lot.
+- Set up an email alert by configuring the **Reorder alert** notification in **Setup → Notifications**.
+
+## Barcodes
+
+Dolibarr supports EAN-13, EAN-8, Code 39, Code 128, and QR code formats.
+
+<Tabs>
+  <Tab title="Assigning a barcode to a product">
+    Open the product record and enter the barcode value in the **Barcode** field on the main tab. Select the barcode type from the dropdown. The barcode prints on product labels and is used for scanning on POS and inventory screens.
+  </Tab>
+  <Tab title="Printing product labels">
+    Go to **Products → Print barcodes**. Select the products, the label format, and the printer. Dolibarr generates a PDF sheet of labels ready for printing.
+  </Tab>
+  <Tab title="Warehouse locations">
+    If you use location labels within a warehouse, enable **Storage locations** and assign a barcode to each location. Scanners can then direct staff to the precise shelf during picking.
+  </Tab>
+</Tabs>

@@ -1,0 +1,198 @@
+---
+title: "Sales, proposals, and invoicing workflow"
+description: "Create commercial proposals with online signing, convert them to orders and invoices, then record payments — all within Dolibarr's integrated sales pipeline."
+---
+
+Dolibarr's sales pipeline is a fully connected chain: a single commercial proposal can flow all the way through to a paid invoice without re-entering data at any stage. Each step is a distinct document with its own status lifecycle, giving you a clear audit trail from first contact to final payment.
+
+## Sales lifecycle overview
+
+```text
+Commercial Proposal → Customer Order → Invoice → Payment
+```
+
+Every transition in the chain is optional — you can skip straight to an invoice if you don't need a proposal or order, or stop at any stage if your workflow requires it.
+
+<CardGroup cols={4}>
+  <Card title="Proposal" icon="file-text">
+    Send a formal quote. The customer can sign it online.
+  </Card>
+  <Card title="Order" icon="clipboard-list">
+    Confirm the deal, reserve stock, and trigger shipping.
+  </Card>
+  <Card title="Invoice" icon="receipt">
+    Bill the customer. Supports drafts, credit notes, and recurring templates.
+  </Card>
+  <Card title="Payment" icon="banknotes">
+    Record cash received against one or more invoices.
+  </Card>
+</CardGroup>
+
+## Commercial proposals
+
+Navigate to **Commerce → Proposals → New proposal** or create one directly from a third-party record.
+
+### Building a proposal
+
+- Set the **third party** (customer or prospect), the **validity date**, and the **payment terms**.
+- Add product or service lines. Each line pulls the product reference, description, unit price, VAT rate, and any customer-specific pricing automatically.
+- Apply a **global discount** or a **per-line discount** as a percentage or absolute amount.
+- Use the **Notes** tab for internal notes (not printed) and public notes (printed on the PDF).
+
+### Sending and online signing
+
+<Steps>
+  <Step title="Generate the PDF">
+    On the validated proposal, click **Generate PDF** and choose a template. Dolibarr renders a formatted proposal PDF using your company logo and details.
+  </Step>
+  <Step title="Send by email">
+    Click **Send by email** directly from the proposal. The PDF attaches automatically, and the email body can use a configurable template.
+  </Step>
+  <Step title="Share the online signing link">
+    Enable the **Online signing** option in proposal settings. Dolibarr generates a unique public URL you can include in the email. The customer opens the link in a browser, reviews the proposal, and clicks **Sign** — no account required.
+  </Step>
+  <Step title="Signature captured">
+    Once signed, the proposal status updates to **Signed** and a signed PDF is stored on the record. You receive a notification email.
+  </Step>
+</Steps>
+
+### Converting a proposal
+
+From a validated or signed proposal, use the **Convert to order** or **Create invoice** buttons to advance the pipeline. No data entry is repeated.
+
+<Note>
+A proposal can only be converted once. If you need to invoice partial quantities, create the customer order first and then generate invoices from the order.
+</Note>
+
+## Customer orders
+
+Access customer orders at **Commerce → Customer orders**.
+
+### Creating an order
+
+- Create from a proposal (recommended) or click **New order** to start from scratch.
+- **Stock reservation**: when you validate an order, Dolibarr can automatically reserve stock in the selected warehouse. Enable this at **Setup → Modules → Orders**.
+
+### Generating a shipment
+
+From a validated order, click **Create shipment** to open the shipping form. Set the quantities to ship (for partial shipments), assign a warehouse, and validate the shipment. This updates stock levels immediately.
+
+<Tip>
+Use the **Delivery address** feature on the order to ship to an address different from the third party's main address — useful for companies with multiple sites.
+</Tip>
+
+## Customer invoices
+
+Navigate to **Billing → Customers → Invoices**.
+
+### Invoice states
+
+| State | Meaning |
+|---|---|
+| **Draft** | Editable, not yet sent to the customer. VAT is not posted. |
+| **Validated** | Locked for editing. Appears in accounting journals. |
+| **Partially paid** | At least one payment recorded, balance still outstanding. |
+| **Paid** | Fully settled. |
+| **Abandoned** | Written off as uncollectable. |
+
+### Creating an invoice
+
+<Tabs>
+  <Tab title="From an order">
+    Open the customer order and click **Create invoice**. All lines, discounts, and addresses carry over. You can invoice 100% or choose specific lines for partial invoicing.
+  </Tab>
+  <Tab title="From a proposal">
+    On a signed or validated proposal that has no order, click **Create invoice** to jump directly to an invoice.
+  </Tab>
+  <Tab title="From scratch">
+    Go to **Billing → New invoice**, select the customer, then add lines manually. Use this for one-off invoices or when your workflow doesn't use proposals or orders.
+  </Tab>
+</Tabs>
+
+### Credit notes
+
+Click **Create credit note** on a validated invoice to open a pre-filled credit note. A credit note reduces the customer's balance and can be linked to a new invoice or refunded as a payment.
+
+### Recurring invoices
+
+Use **Billing → Invoice templates** (backed by `card-rec.php`) to define a recurring invoice:
+
+1. Set the product lines, amounts, and VAT.
+2. Choose a recurrence frequency (monthly, quarterly, annually).
+3. Set the first generation date. Dolibarr generates draft invoices automatically on schedule.
+
+<Warning>
+Recurring invoices generate in **draft** state by default. You must validate and send each one manually unless you configure the auto-validation cron job.
+</Warning>
+
+## Recording payments
+
+<Steps>
+  <Step title="Open the invoice">
+    Navigate to the validated invoice. The outstanding balance is shown at the bottom of the page.
+  </Step>
+  <Step title="Add a payment">
+    Click **Add payment**. Enter the payment date, amount, payment method (bank transfer, cheque, card, cash), and select the **bank account** the money was received into.
+  </Step>
+  <Step title="Apply to multiple invoices (optional)">
+    If the customer paid several invoices in one transaction, use **Billing → Batch payment entry** to record a single receipt and allocate it across multiple invoices at once.
+  </Step>
+  <Step title="Invoice marked as paid">
+    Once the full balance is settled, the invoice status automatically changes to **Paid** and the payment is posted to the accounting journal.
+  </Step>
+</Steps>
+
+## End-to-end "create and close a sale" workflow
+
+<Steps>
+  <Step title="Create a prospect or customer">
+    Add a third party record with the company name, type set to at least **Prospect**, and contact details.
+  </Step>
+  <Step title="Log an opportunity">
+    On the third party, open the **Opportunities** tab and create an opportunity with the expected amount and close date.
+  </Step>
+  <Step title="Send a commercial proposal">
+    From the opportunity (or directly from the menu), create a proposal. Add product lines, generate a PDF, and send it with the online signing link.
+  </Step>
+  <Step title="Customer signs">
+    The customer clicks the signing link. The proposal moves to **Signed** status and a notification is sent.
+  </Step>
+  <Step title="Convert to order">
+    Click **Convert to order** on the signed proposal. Set the warehouse for stock reservation and validate the order.
+  </Step>
+  <Step title="Create shipment (if applicable)">
+    Generate a shipment from the order, pick the goods, and validate the shipment to update stock.
+  </Step>
+  <Step title="Generate the invoice">
+    From the order, click **Create invoice**, then validate it. The invoice is now posted to the accounting journal.
+  </Step>
+  <Step title="Send the invoice">
+    Click **Send by email** to deliver the invoice PDF to the customer.
+  </Step>
+  <Step title="Record payment">
+    When payment arrives, open the invoice and click **Add payment**. Select the bank account and confirm.
+  </Step>
+  <Step title="Reconcile (optional)">
+    In the **Banking** module, match the recorded payment to your bank statement line to complete the reconciliation.
+  </Step>
+</Steps>
+
+## Discounts and rebates
+
+- **Absolute discount per customer**: set a fixed monetary credit on the third-party record (e.g. from a credit note credit). Applied during invoice creation.
+- **Percentage discount**: enter a discount percentage on each proposal or invoice line, or apply a global discount at the document level.
+- **Price levels**: configure multiple price lists (e.g. wholesale, retail) and assign a price level to each customer.
+
+## PDF generation
+
+Dolibarr ships with several PDF templates for each document type. Switch between them at any time:
+
+1. On the document, scroll to the **PDF** section.
+2. Select a template from the dropdown (e.g. `crabe`, `standard`, `einstein`).
+3. Click **Generate** to produce or refresh the PDF.
+
+Custom PDF templates can be created using PHP or ODT format and placed in the appropriate template directory.
+
+## Point of Sale (TakePOS)
+
+For retail and walk-in sales, enable the **TakePOS** module. TakePOS provides a touch-optimised interface for scanning products, applying discounts, and recording cash or card payments. All TakePOS transactions create standard Dolibarr invoices and update stock in real time.

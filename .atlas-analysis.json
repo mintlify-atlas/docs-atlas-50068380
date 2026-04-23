@@ -1,0 +1,118 @@
+{
+  "projectType": "saas",
+  "projectName": "Dolibarr ERP & CRM",
+  "projectDescription": "An open-source ERP and CRM web application written in PHP that helps businesses of any size manage contacts, invoices, orders, inventory, accounting, HR, and more through a modular, extensible platform.",
+  "theme": "maple",
+  "primaryColor": "#62bbc1",
+  "lightColor": "#243c5c",
+  "darkColor": "#c4cdd2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart",
+              "modules-overview"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/crm-third-parties",
+              "features/sales-invoicing",
+              "features/purchasing",
+              "features/inventory",
+              "features/accounting",
+              "features/hr-expenses",
+              "features/projects-agenda"
+            ]
+          },
+          {
+            "group": "Administration",
+            "pages": [
+              "admin/configuration",
+              "admin/users-permissions",
+              "admin/modules",
+              "admin/security",
+              "admin/upgrading"
+            ]
+          },
+          {
+            "group": "Developer Guide",
+            "pages": [
+              "developer/architecture",
+              "developer/module-development",
+              "developer/hooks-triggers",
+              "developer/contributing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Core Resources",
+            "pages": [
+              "api/thirdparties",
+              "api/contacts",
+              "api/invoices",
+              "api/orders",
+              "api/products"
+            ]
+          },
+          {
+            "group": "Extended Resources",
+            "pages": [
+              "api/proposals",
+              "api/projects",
+              "api/suppliers",
+              "api/accounting",
+              "api/hr"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Modular ERP/CRM with 100+ built-in modules and 1000+ marketplace add-ons",
+    "Customer and supplier management with full sales/purchase lifecycle",
+    "Invoicing, payments, and accounting with multi-currency support",
+    "Inventory and warehouse management with batches and serials",
+    "HR management including leave, expense reports, and recruitment",
+    "Project and task management with shared calendar and agenda",
+    "REST and SOAP APIs for integration with external applications",
+    "Point of Sale (TakePOS) for retail operations",
+    "Manufacturing (MRP/BOM) and workstation management",
+    "Multi-language, multi-company, and GDPR-compliant architecture"
+  ],
+  "publicApiSurface": [
+    "GET/POST /api/index.php/thirdparties — Manage customers and suppliers",
+    "GET/POST /api/index.php/contacts — Manage contacts",
+    "GET/POST /api/index.php/invoices — Manage customer invoices",
+    "GET/POST /api/index.php/orders — Manage customer orders",
+    "GET/POST /api/index.php/products — Manage products and services",
+    "GET/POST /api/index.php/proposals — Manage commercial proposals",
+    "GET/POST /api/index.php/projects — Manage projects and tasks",
+    "GET/POST /api/index.php/supplier_invoices — Manage supplier invoices",
+    "GET/POST /api/index.php/supplier_orders — Manage purchase orders",
+    "GET/POST /api/index.php/bankaccounts — Manage bank accounts",
+    "GET/POST /api/index.php/users — Manage users",
+    "GET/POST /api/index.php/warehouses — Manage warehouses and stock",
+    "POST /api/index.php/login — Authenticate and retrieve API token",
+    "GET /api/index.php/status — Get Dolibarr server status"
+  ]
+}

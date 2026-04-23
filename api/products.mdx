@@ -1,0 +1,315 @@
+---
+title: "REST API endpoints for products and services"
+description: "GET, POST, PUT, DELETE /products — manage product and service catalog entries, pricing, stock levels, and categories via the Dolibarr REST API."
+---
+
+The Dolibarr product catalog is a shared resource used across the sales, purchasing, and inventory modules. A single catalog entry can represent a physical product with stock tracking or an intangible service billed by time or unit. The same record drives order lines, invoice lines, and purchase orders, so changes to price or description propagate immediately to all modules. Products and services are distinguished by the `type` field.
+
+**Base path:** `/api/index.php/products`
+
+All requests require a valid API token passed in the `DOLAPIKEY` header.
+
+---
+
+## List products
+
+<ParamField query="sortfield" type="string" default="t.ref">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction. `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Maximum number of records to return.
+</ParamField>
+
+<ParamField query="page" type="number" default="0">
+  Page number for pagination (zero-indexed).
+</ParamField>
+
+<ParamField query="mode" type="number" default="0">
+  Filter by type. `0` = all, `1` = products only, `2` = services only.
+</ParamField>
+
+<ParamField query="category" type="number">
+  Filter by category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL-style filter expression. Example: `(t.tosell:=:1)`.
+</ParamField>
+
+<ParamField query="ids_only" type="boolean" default="false">
+  When `true`, returns only the IDs of matching products — useful for large catalogs.
+</ParamField>
+
+<ParamField query="variant_filter" type="number" default="0">
+  Filter variants. `0` = all, `1` = products without variants, `2` = parent products, `3` = variants only.
+</ParamField>
+
+<ParamField query="pagination_data" type="boolean" default="false">
+  When `true`, wraps the response in a `data` key and adds a `pagination` object.
+</ParamField>
+
+<ParamField query="includestockdata" type="number" default="0">
+  When set to `1`, stock information is included in each product object (slower).
+</ParamField>
+
+<ParamField query="properties" type="string">
+  Comma-separated list of properties to include. Returns all properties if omitted.
+</ParamField>
+
+```bash List physical products in stock
+curl --request GET \
+  --url 'https://your-dolibarr.example.com/api/index.php/products?mode=1&includestockdata=1' \
+  --header 'DOLAPIKEY: your_api_key'
+```
+
+---
+
+## Create a product
+
+Both `ref` and `label` are mandatory.
+
+<ParamField body="ref" type="string" required>
+  Unique reference code for the product (e.g. `WIDGET-001`).
+</ParamField>
+
+<ParamField body="label" type="string" required>
+  Display name of the product or service.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Detailed description shown on documents.
+</ParamField>
+
+<ParamField body="type" type="number" default="0">
+  Product type. `0` = physical product, `1` = service.
+</ParamField>
+
+<ParamField body="price" type="number">
+  Default selling price excluding tax.
+</ParamField>
+
+<ParamField body="price_ttc" type="number">
+  Default selling price including tax. Use this instead of `price` when prices are entered tax-inclusive.
+</ParamField>
+
+<ParamField body="tva_tx" type="number">
+  Default VAT rate as a percentage (e.g. `20` for 20 %).
+</ParamField>
+
+<ParamField body="weight" type="number">
+  Weight of the product (for shipping calculations).
+</ParamField>
+
+<ParamField body="barcode" type="string">
+  Barcode or EAN value.
+</ParamField>
+
+<ParamField body="fk_unit" type="number">
+  ID of the unit of measure. Use `GET /api/index.php/dictionaries/units` to list available values.
+</ParamField>
+
+```bash Create a product
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/products' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "ref": "WIDGET-001",
+    "label": "Blue Widget",
+    "type": 0,
+    "price": 25.00,
+    "tva_tx": 20,
+    "weight": 0.5,
+    "barcode": "5901234123457"
+  }'
+```
+
+**Response:** Returns the numeric ID of the created product.
+
+---
+
+## Get a product
+
+```text
+GET /products/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the product to retrieve.
+</ParamField>
+
+<ParamField query="includestockdata" type="number" default="0">
+  When set to `1`, stock data is included in the response.
+</ParamField>
+
+<ParamField query="includesubproducts" type="boolean" default="false">
+  When `true`, component products are included (for kit/bundle products).
+</ParamField>
+
+<ParamField query="includeparentid" type="boolean" default="false">
+  When `true`, the ID of the parent product is included (for variant products).
+</ParamField>
+
+<ParamField query="includetrans" type="boolean" default="false">
+  When `true`, label and description translations are included.
+</ParamField>
+
+<ResponseField name="id" type="number">
+  Unique identifier.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Product reference code.
+</ResponseField>
+
+<ResponseField name="label" type="string">
+  Product name.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Product description.
+</ResponseField>
+
+<ResponseField name="type" type="number">
+  Product type. `0` = physical product, `1` = service.
+</ResponseField>
+
+<ResponseField name="price" type="number">
+  Selling price excluding tax.
+</ResponseField>
+
+<ResponseField name="price_ttc" type="number">
+  Selling price including tax.
+</ResponseField>
+
+<ResponseField name="tva_tx" type="number">
+  Default VAT rate as a percentage.
+</ResponseField>
+
+<ResponseField name="stock_reel" type="number">
+  Current real stock quantity (summed across all warehouses).
+</ResponseField>
+
+<ResponseField name="weight" type="number">
+  Weight of the product.
+</ResponseField>
+
+<ResponseField name="barcode" type="string">
+  Barcode or EAN value.
+</ResponseField>
+
+<ResponseField name="fk_unit" type="number">
+  ID of the unit of measure.
+</ResponseField>
+
+---
+
+## Update a product
+
+```text
+PUT /products/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the product to update.
+</ParamField>
+
+Send only the fields you want to change. The same fields accepted by the create endpoint are accepted here.
+
+---
+
+## Delete a product
+
+```text
+DELETE /products/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the product to delete.
+</ParamField>
+
+<Warning>
+  Deleting a product that is referenced on existing orders or invoices may cause data integrity issues. Archive the product by setting `tosell = 0` and `tobuy = 0` instead of deleting it.
+</Warning>
+
+---
+
+## Get stock levels per warehouse
+
+```text
+GET /products/{id}/stock
+```
+
+Returns the real stock quantity broken down by warehouse for the specified product.
+
+<ParamField path="id" type="number" required>
+  ID of the product.
+</ParamField>
+
+<ResponseField name="stock_warehouses" type="object">
+  Map of warehouse IDs to stock details.
+
+  <Expandable title="warehouse entry properties">
+    <ResponseField name="id" type="number">
+      Warehouse ID.
+    </ResponseField>
+    <ResponseField name="label" type="string">
+      Warehouse name.
+    </ResponseField>
+    <ResponseField name="real" type="number">
+      Actual stock quantity in this warehouse.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get a product by reference
+
+```text
+GET /products/ref/{ref}
+```
+
+Looks up a product using its reference code rather than its numeric ID.
+
+<ParamField path="ref" type="string" required>
+  Reference code of the product (e.g. `WIDGET-001`).
+</ParamField>
+
+---
+
+## Get tiered selling prices
+
+```text
+GET /products/{id}/selling_multiprices/per_segment
+```
+
+Returns the multi-price levels configured for the product. Requires the multi-price module to be enabled.
+
+<ParamField path="id" type="number" required>
+  ID of the product.
+</ParamField>
+
+<ResponseField name="multiprices" type="object[]">
+  Array of price levels, one per configured price segment.
+
+  <Expandable title="price level properties">
+    <ResponseField name="level" type="number">
+      Price level index (1-based).
+    </ResponseField>
+    <ResponseField name="price" type="number">
+      Price excluding tax for this level.
+    </ResponseField>
+    <ResponseField name="price_ttc" type="number">
+      Price including tax for this level.
+    </ResponseField>
+    <ResponseField name="tva_tx" type="number">
+      VAT rate applied at this level.
+    </ResponseField>
+  </Expandable>
+</ResponseField>

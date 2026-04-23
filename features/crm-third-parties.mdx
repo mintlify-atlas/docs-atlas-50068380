@@ -1,0 +1,164 @@
+---
+title: "CRM and third-party management in Dolibarr"
+description: "Manage customers, prospects, suppliers, and contacts. Track leads through the sales pipeline, log calls, and link activity to companies and individuals."
+---
+
+In Dolibarr, almost every business relationship flows through the **Third Parties** module. A third party is a single unified record that can simultaneously be a customer, a prospect, a supplier, or any combination — eliminating duplicate records and giving you a 360-degree view of every organisation you interact with.
+
+## What is a third party?
+
+Dolibarr uses the term "third party" (tiers in French) to describe any external entity your organisation deals with. A single record can carry one or more of these roles:
+
+<CardGroup cols={3}>
+  <Card title="Customer" icon="building">
+    An organisation or individual who buys goods or services from you. Customer invoices and orders are linked to this record.
+  </Card>
+  <Card title="Prospect" icon="binoculars">
+    A potential customer in your pipeline. Prospects can receive commercial proposals and be converted to customers once a deal is won.
+  </Card>
+  <Card title="Supplier" icon="truck">
+    An organisation you purchase from. Supplier invoices and purchase orders are linked here.
+  </Card>
+</CardGroup>
+
+<Note>
+A third party can hold all three roles at the same time. For example, a partner who both buys from you and sells to you only needs one record.
+</Note>
+
+## Creating a third party
+
+Navigate to **Third Parties → New Third Party** to open the creation form.
+
+### Required fields
+
+| Field | Description |
+|---|---|
+| **Name** | The company or individual's full name. Used across all linked documents. |
+| **Type** | Customer, Prospect, Supplier, or any combination. Sets which modules link to this record. |
+
+### Optional profile fields
+
+- **Alias / Short name** — a shorter display name for internal use
+- **Address, ZIP, Town, Country** — used on generated PDFs (invoices, proposals)
+- **Phone / Fax / Email / Website** — displayed on the record and available for mass emailing
+- **Staff count and turnover** — useful for segmentation and scoring
+
+### Country and VAT settings
+
+<Tabs>
+  <Tab title="VAT number">
+    Enter the EU VAT registration number in the **VAT ID** field. Dolibarr can validate European VAT numbers using the built-in VIES check under **Third Parties → Check VAT number**.
+  </Tab>
+  <Tab title="Country">
+    Selecting the correct country applies the right VAT rules automatically. For intra-EU sales, setting the country to an EU member state triggers reverse-charge behaviour when the customer provides a valid VAT number.
+  </Tab>
+  <Tab title="Local taxes">
+    For jurisdictions with local taxes (e.g. Spanish RE/IRPF), additional tax fields appear once the appropriate country is selected and the local-tax module is enabled.
+  </Tab>
+</Tabs>
+
+## Contacts
+
+Contacts are people linked to a third party. A single company record can have many contacts, each with their own role, phone number, and email.
+
+- Go to the **Contacts** tab on a third party record to add or view contacts.
+- A contact can be linked to **multiple third parties** (for example, a consultant who works across several of your clients).
+- Contacts can be granted **portal access** so they can view their own invoices and proposals online.
+
+<Tip>
+Use the **Job title** field on a contact to filter later when deciding who to include in a mass-emailing campaign.
+</Tip>
+
+## CRM: opportunities and pipeline
+
+Enable the **CRM / Leads** module (**Setup → Modules**) to unlock the full opportunity pipeline.
+
+### Pipeline stages
+
+```text
+Prospect → Lead → Opportunity → Won / Lost
+```
+
+Each stage maps to a configurable probability percentage. You can customise stage labels and percentages at **Setup → CRM → Opportunity statuses**.
+
+<Steps>
+  <Step title="Create an opportunity">
+    Open a third party and click the **Opportunities** tab, then **New opportunity**. Set the stage, expected close date, and estimated amount.
+  </Step>
+  <Step title="Assign a sales owner">
+    Set the **Sales representative** field to track which team member owns the deal.
+  </Step>
+  <Step title="Link a commercial proposal">
+    Once you are ready to send a formal offer, create a **Commercial Proposal** directly from the opportunity. The proposal inherits the third-party details automatically.
+  </Step>
+  <Step title="Close the deal">
+    Mark the opportunity **Won** or **Lost**. Won opportunities can trigger automatic conversion of the linked proposal to a customer order.
+  </Step>
+</Steps>
+
+## Logging activities
+
+All interactions with a third party are recorded through the **Agenda / Events** module.
+
+<AccordionGroup>
+  <Accordion title="Logging a phone call">
+    From any third-party record, click **Add event** and select the event type **Phone call**. Set the date, duration, and a short note. The entry appears on the third party's **Agenda** tab and on your personal calendar.
+  </Accordion>
+  <Accordion title="Scheduling a meeting">
+    Create a new event of type **Meeting**, assign one or more participants (internal users or external contacts), and set a start/end time. Participants receive an email notification if configured.
+  </Accordion>
+  <Accordion title="Logging an email sent">
+    Emails sent directly from Dolibarr (proposals, invoices) are automatically logged. You can also add a manual **Email** event to record conversations that happened outside the system.
+  </Accordion>
+  <Accordion title="Linking events to tasks or projects">
+    Every event can be linked to a project and task, allowing time spent with a customer to feed directly into project time tracking.
+  </Accordion>
+</AccordionGroup>
+
+## Categories and segmentation
+
+Assign **categories** to third parties to group and filter them for targeted campaigns or reporting.
+
+- Create category labels at **Setup → Categories → Third parties**.
+- Assign one or more categories to each third party from its **Categories** tab.
+- Filter the third-party list by category using the search panel on the left side of the list view.
+
+<Tip>
+Combine categories with the **Mass emailing** module to send newsletters or announcements to a specific segment without exporting a list first.
+</Tip>
+
+## Import and export
+
+### Bulk import via CSV
+
+<Steps>
+  <Step title="Download the template">
+    Go to **Tools → Import** and choose the **Third parties** data object. Download the CSV template to see the expected column headers.
+  </Step>
+  <Step title="Populate the file">
+    Fill in name, type, address, country code, VAT number, and any custom fields. Keep country codes as ISO 3166-1 alpha-2 (e.g. `FR`, `DE`, `GB`).
+  </Step>
+  <Step title="Upload and map">
+    Upload your file, then use the column-mapping screen to match your CSV headers to Dolibarr fields. You can save the mapping as a profile to reuse it later.
+  </Step>
+  <Step title="Run the import">
+    Review the preview rows, then click **Import**. Dolibarr reports any rows that fail validation without stopping the rest of the import.
+  </Step>
+</Steps>
+
+### Export
+
+Use **Tools → Export** and select the **Third parties** object to export filtered records to CSV or Excel.
+
+## Searching and filtering the third-party list
+
+The list view at **Third Parties → List** has a collapsible filter panel on the left:
+
+- Filter by **type** (customer / prospect / supplier)
+- Filter by **sales representative**
+- Filter by **category**, **country**, or **activity status**
+- Use the top search bar for a full-text search across name, alias, email, and phone
+
+<Warning>
+The **Active / Inactive** filter is separate from the type filter. An inactive third party is hidden from autocomplete fields by default but still accessible through the list. Set a third party to inactive when a business relationship ends rather than deleting the record, to preserve historical documents.
+</Warning>

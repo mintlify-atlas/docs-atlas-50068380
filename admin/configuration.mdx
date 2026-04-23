@@ -1,0 +1,223 @@
+---
+title: "Configure Dolibarr for your company"
+description: "Set up your company profile, branding, localization, email settings, and system-wide defaults in the Dolibarr administration panel."
+---
+
+The administration panel is your central hub for tailoring Dolibarr to your organization. Every setting here—from your legal name and VAT number to the SMTP relay that delivers invoices—affects every user and every document the system generates, so work through this page methodically after a fresh install and revisit it whenever your business requirements change.
+
+## Initial company setup after install
+
+Complete these steps in order on a fresh installation before inviting other users or creating any documents.
+
+<Steps>
+  <Step title="Log in as an administrator">
+    Navigate to your Dolibarr URL and sign in with the admin account created during installation. All setup pages require the `admin` flag on the user account.
+  </Step>
+  <Step title="Open the company profile">
+    Go to **Home → Setup → Company/Organization** (`/admin/company.php`). This page controls the legal identity of your organization throughout the system.
+  </Step>
+  <Step title="Fill in your company identity">
+    Enter at minimum:
+    - **Company/Organization name** — appears on all PDFs and the login page
+    - **Address, city, postal code, country** — country selection drives VAT rules and localization defaults
+    - **VAT/Tax ID number** — printed on invoices; required for intra-community VAT in the EU
+    - **Phone and email** — used as sender defaults for outbound mail
+
+    Upload your **logo** (PNG or JPG, recommended 200 × 80 px) — it appears on PDFs and the top-left corner of the interface.
+  </Step>
+  <Step title="Set localization">
+    Still on the company page, scroll to the **Localization** section and configure:
+    - **Default language** for the interface and generated documents
+    - **Currency** (ISO code, e.g., `EUR`, `USD`)
+    - **Date format** and **number format** (decimal separator, thousands separator)
+    - **Fiscal year start month** — affects accounting period labels and financial reports
+  </Step>
+  <Step title="Configure outbound email (SMTP)">
+    Go to **Home → Setup → Emails** (`/admin/mails.php`) and enter your SMTP server details so Dolibarr can send documents, notifications, and password-reset emails.
+  </Step>
+  <Step title="Configure PDF templates">
+    Go to **Home → Setup → PDF generation** (`/admin/pdf.php`) and choose a default PDF template for each document type (invoices, proposals, orders). The templates control layout, font, and the position of your logo and address block.
+  </Step>
+  <Step title="Set reference number formats">
+    Navigate to each module's setup page (e.g., **Home → Setup → Invoices**) to define the numbering pattern and starting counter for each document type.
+  </Step>
+</Steps>
+
+---
+
+## Company profile
+
+**Path:** Home → Setup → Company/Organization (`/admin/company.php`)
+
+The company profile is the legal and visual identity of your organization in Dolibarr. Every generated PDF uses the name, address, VAT number, and logo stored here.
+
+| Field | Notes |
+|---|---|
+| Name | Appears in the top-left of PDFs and the login page header |
+| Address | Full postal address printed on all outbound documents |
+| VAT/Tax ID | Required for tax-compliant invoices in most jurisdictions |
+| Logo | PNG/JPG; recommended dimensions 200 × 80 px |
+| Country | Drives tax rule detection and locale defaults |
+| Capital | Optional legal share capital figure for the PDF footer |
+
+<Tip>
+After uploading a new logo, clear your browser cache if it does not appear immediately in PDF previews — Dolibarr caches the compiled PDF template.
+</Tip>
+
+---
+
+## Localization
+
+**Path:** Home → Setup → Company/Organization → Localization section
+
+| Setting | Where it is used |
+|---|---|
+| Default language | Interface language for new users and document generation language |
+| Currency | Default currency symbol and ISO code on all financial documents |
+| Date format | Display format throughout the interface (e.g., DD/MM/YYYY) |
+| Number format | Decimal and thousands separator (e.g., `1 234,56` vs `1,234.56`) |
+| Fiscal year start | Determines accounting period boundaries in reports |
+
+<Note>
+Individual users can override the interface language from their own user profile without affecting document generation defaults.
+</Note>
+
+---
+
+## Email settings
+
+**Path:** Home → Setup → Emails (`/admin/mails.php`)
+
+Dolibarr sends email for invoices, notifications, password resets, and ticketing. Without a working SMTP configuration, none of these features will work.
+
+<Tabs>
+  <Tab title="SMTP (recommended)">
+    Enable **Send emails using an SMTP server** and fill in:
+
+    | Field | Example |
+    |---|---|
+    | SMTP host | `smtp.example.com` |
+    | Port | `587` (STARTTLS) or `465` (SSL) |
+    | Authentication | Username + password |
+    | From address | `erp@example.com` |
+    | From name | `Example Ltd ERP` |
+
+    Click **Test** to send a test message to your admin email address before saving.
+  </Tab>
+  <Tab title="PHP mail() fallback">
+    If no SMTP server is configured, Dolibarr calls PHP's built-in `mail()` function using the server's local MTA. This works on self-hosted Linux servers with Postfix or Sendmail installed, but is unreliable for cloud hosting and will often land in spam.
+
+    Leave this as a fallback only; configure SMTP for production use.
+  </Tab>
+</Tabs>
+
+**Email templates** are managed at **Home → Setup → Email templates** (`/admin/mails_templates.php`). You can create per-language templates for each event type (invoice sent, order confirmed, etc.) and reference object fields using `__FIELD__` substitution variables.
+
+<Tip>
+Set up SPF, DKIM, and DMARC DNS records for your sending domain to maximize email deliverability. Dolibarr itself does not manage DNS, but it supports adding a custom `Return-Path` header.
+</Tip>
+
+---
+
+## PDF settings
+
+**Path:** Home → Setup → PDF generation (`/admin/pdf.php`)
+
+Dolibarr generates PDFs server-side using its own template engine. Each document type (invoice, proposal, order, delivery note, etc.) has an independently configured default template.
+
+- **Template per document type** — select from available templates (e.g., `crabe`, `squille`, `einstein` for invoices). Each template has a different column layout and header style.
+- **Header / footer** — add a freeform HTML or text block that appears at the top or bottom of every page.
+- **Logo position** — controlled by the template; upload the logo on the Company profile page.
+- **Watermark** — some templates support a draft/cancelled watermark on the PDF background.
+- **PDF other settings** (`/admin/pdf_other.php`) — controls page size (A4 vs Letter), font, margin widths, and whether to include a tear-off payment stub.
+
+---
+
+## Numbering sequences
+
+**Path:** Each module's own setup page (e.g., Home → Setup → Invoices for invoice numbering)
+
+Every document type in Dolibarr has a configurable reference number format. The numbering module defines a pattern and a counter.
+
+| Document type | Default format example | Setup path |
+|---|---|---|
+| Customer invoices | `FA2024-0001` | Home → Setup → Invoices |
+| Proposals / quotes | `PR2024-0001` | Home → Setup → Proposals |
+| Customer orders | `CO2024-0001` | Home → Setup → Orders |
+| Supplier orders | `SO2024-0001` | Home → Setup → Supplier orders |
+| Delivery notes | `LI2024-0001` | Home → Setup → Shipping |
+
+<Tip>
+If you need to restart a counter part-way through a year (e.g., after migrating from another system), directly update the `llx_document_model` sequence value in the database, or switch to a custom numbering module that lets you set the starting number in the UI.
+</Tip>
+
+---
+
+## Default values
+
+**Path:** Home → Setup → Default values (`/admin/defaultvalues.php`)
+
+The default values page lets you pre-fill form fields for specific pages so users do not have to repeat the same selections. Common uses:
+
+- Pre-select a **default payment terms** (e.g., "30 days net") on new invoice creation
+- Pre-select a **default bank account** for payments
+- Pre-select a **default product category** on new product forms
+- Pre-fill a **default shipping method**
+
+Defaults are context-aware: you can set different defaults for the invoice creation page versus the order creation page.
+
+---
+
+## Multi-currency
+
+**Path:** Home → Setup → Modules → MultiCurrency (enable), then Home → Setup → Currencies (`/admin/multicurrency.php`)
+
+<Steps>
+  <Step title="Enable the MultiCurrency module">
+    Go to **Home → Setup → Modules/Applications** and enable the **MultiCurrency** module. After enabling, a **Currencies** menu item appears under Setup.
+  </Step>
+  <Step title="Add foreign currencies">
+    Navigate to **Home → Setup → Currencies** and add each currency you transact in (e.g., USD, GBP, CHF). Enter the ISO code and a display label.
+  </Step>
+  <Step title="Set exchange rates">
+    For each currency, enter the current exchange rate relative to your base currency. Exchange rates are stored manually — there is no automatic live-rate feed in the core product.
+  </Step>
+</Steps>
+
+<Note>
+Invoices are always recorded in your base currency for accounting purposes. The foreign currency amount and exchange rate are stored alongside the base-currency figure for reference.
+</Note>
+
+---
+
+## Notifications
+
+**Path:** Home → Setup → Notifications (`/admin/notification.php`)
+
+Dolibarr can send automatic email notifications when documents change state. Each notification rule defines:
+
+- The **module and event** that triggers it (e.g., "Invoice validated", "Order confirmed")
+- The **recipients** — fixed email addresses, or dynamic recipients such as the document's assigned salesperson, or the customer's contact email
+
+Enable and configure notification rules per event type. Recipients receive a plain-text or HTML email using the matching email template.
+
+---
+
+## Backup
+
+**Path:** Home → Admin tools → Database backup (`/admin/tools/`)
+
+Dolibarr includes a built-in backup tool that dumps the database to a SQL file stored in the `documents/admin/backup/` directory.
+
+<Warning>
+The built-in backup tool covers only the **database**. You must separately back up the `htdocs/documents/` directory (uploaded files, generated PDFs) and `htdocs/conf/conf.php` using your server's file backup process.
+</Warning>
+
+To run a manual backup:
+
+1. Go to **Home → Admin tools → Database backup**.
+2. Choose the compression format (none, gzip, bzip2).
+3. Click **Generate**.
+4. Download the resulting `.sql` or `.sql.gz` file to a location off the server.
+
+Schedule automated backups using a server-side cron job calling `mysqldump` (or `pg_dump` for PostgreSQL) directly — this is more reliable than relying on the in-app backup for production systems.

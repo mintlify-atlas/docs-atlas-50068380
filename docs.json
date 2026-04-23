@@ -1,122 +1,115 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Dolibarr ERP & CRM",
+  "theme": "maple",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#62bbc1",
+    "light": "#243c5c",
+    "dark": "#c4cdd2"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/3536fb70-9ecd-468e-87c7-cc939ba1059f.png",
+  "logo": {
+    "light": "https://media.brand.dev/91d24043-e1b5-4321-ab7c-0fd5f22a65e6.svg",
+    "dark": "https://media.brand.dev/91d24043-e1b5-4321-ab7c-0fd5f22a65e6.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Dolibarr/dolibarr"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Dolibarr/dolibarr"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
+              "installation",
               "quickstart",
-              "development"
+              "modules-overview"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/crm-third-parties",
+              "features/sales-invoicing",
+              "features/purchasing",
+              "features/inventory",
+              "features/accounting",
+              "features/hr-expenses",
+              "features/projects-agenda"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Administration",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "admin/configuration",
+              "admin/users-permissions",
+              "admin/modules",
+              "admin/security",
+              "admin/upgrading"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Developer Guide",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "developer/architecture",
+              "developer/module-development",
+              "developer/hooks-triggers",
+              "developer/contributing"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Getting Started",
             "pages": [
-              "api-reference/introduction"
+              "api/overview",
+              "api/authentication"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Core Resources",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/thirdparties",
+              "api/contacts",
+              "api/invoices",
+              "api/orders",
+              "api/products"
+            ]
+          },
+          {
+            "group": "Extended Resources",
+            "pages": [
+              "api/proposals",
+              "api/projects",
+              "api/suppliers",
+              "api/accounting",
+              "api/hr"
+            ]
+          },
+          {
+            "group": "Infrastructure Resources",
+            "pages": [
+              "api/bankaccounts",
+              "api/warehouses",
+              "api/users"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

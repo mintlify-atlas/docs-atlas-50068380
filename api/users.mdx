@@ -1,0 +1,224 @@
+---
+title: "REST API endpoints for users and groups"
+description: "GET, POST, PUT, DELETE /users — manage Dolibarr user accounts and groups, look up users by login or email, and assign group memberships via the API."
+---
+
+The users API lets you create and manage Dolibarr user accounts and user groups programmatically. This is useful for automating onboarding workflows, syncing users from an external identity provider, or building HR integrations that provision accounts when employees join.
+
+**Base path:** `/api/index.php/users`
+
+<Note>
+  Most user management endpoints require the `user → user` read/write permission or admin access. The current authenticated user's info is available at `GET /users/info` without elevated permissions.
+</Note>
+
+---
+
+## Get current user info
+
+`GET /users/info`
+
+Returns the user associated with the current API token, including their permissions if requested.
+
+<ParamField query="includepermissions" type="integer" default="0">
+  Set to `1` to include the full permissions list in the response.
+</ParamField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/users/info" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## List users
+
+`GET /users`
+
+Returns a list of all user accounts.
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Zero-based page number.
+</ParamField>
+
+<ParamField query="user_ids" type="string">
+  Comma-separated list of user IDs to filter by. Example: `1,2,3`.
+</ParamField>
+
+<ParamField query="category" type="integer">
+  Filter by user category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Advanced filter expression. Example: `(t.statut:=:1)` for active users only.
+</ParamField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/users?limit=50&sortfield=t.lastname&sortorder=ASC" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## Get a user
+
+`GET /users/{id}`
+
+<ParamField path="id" type="integer" required>
+  User ID.
+</ParamField>
+
+<ParamField query="includepermissions" type="integer" default="0">
+  Set to `1` to include the full permissions list in the response.
+</ParamField>
+
+<ResponseField name="id" type="integer">User ID.</ResponseField>
+<ResponseField name="login" type="string">Username for login.</ResponseField>
+<ResponseField name="firstname" type="string">First name.</ResponseField>
+<ResponseField name="lastname" type="string">Last name.</ResponseField>
+<ResponseField name="email" type="string">Email address.</ResponseField>
+<ResponseField name="statut" type="integer">Account status: `1` = active, `0` = disabled.</ResponseField>
+<ResponseField name="admin" type="integer">Set to `1` if the user has administrator rights.</ResponseField>
+<ResponseField name="entity" type="integer">Entity ID the user belongs to.</ResponseField>
+
+---
+
+## Get user by login
+
+`GET /users/login/{login}`
+
+<ParamField path="login" type="string" required>
+  The user's login name.
+</ParamField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/users/login/jdoe" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## Get user by email
+
+`GET /users/email/{email}`
+
+<ParamField path="email" type="string" required>
+  The user's email address.
+</ParamField>
+
+---
+
+## Create a user
+
+`POST /users`
+
+Required field: `login`.
+
+<ParamField body="login" type="string" required>
+  Unique login name for the user.
+</ParamField>
+
+<ParamField body="firstname" type="string">
+  First name.
+</ParamField>
+
+<ParamField body="lastname" type="string">
+  Last name.
+</ParamField>
+
+<ParamField body="email" type="string">
+  Email address.
+</ParamField>
+
+<ParamField body="pass" type="string">
+  Password. If omitted, the user will need to set a password via the password reset flow.
+</ParamField>
+
+<ParamField body="admin" type="integer">
+  Set to `1` to grant administrator rights. Default `0`.
+</ParamField>
+
+```bash
+curl -X POST "https://yourdomain.tld/api/index.php/users" \
+  -H "DOLAPIKEY: your_api_token_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "login": "jdoe",
+    "firstname": "Jane",
+    "lastname": "Doe",
+    "email": "jane.doe@example.com"
+  }'
+```
+
+---
+
+## Update a user
+
+`PUT /users/{id}`
+
+Pass any fields to update. Returns the updated user object.
+
+---
+
+## Delete a user
+
+`DELETE /users/{id}`
+
+<Warning>
+  Deleting a user is permanent. Consider disabling the user (`statut: 0`) rather than deleting to preserve audit history.
+</Warning>
+
+---
+
+## List user groups
+
+`GET /users/groups`
+
+Returns all user groups.
+
+<ParamField query="sortfield" type="string" default="t.rowid">Sort field.</ParamField>
+<ParamField query="limit" type="integer" default="100">Maximum results.</ParamField>
+
+<ResponseField name="id" type="integer">Group ID.</ResponseField>
+<ResponseField name="nom" type="string">Group name.</ResponseField>
+
+---
+
+## Get user's groups
+
+`GET /users/{id}/groups`
+
+Returns the groups a specific user belongs to.
+
+<ParamField path="id" type="integer" required>User ID.</ParamField>
+
+---
+
+## Add user to a group
+
+`GET /users/{id}/setGroup/{group}`
+
+Adds the specified user to a group.
+
+<ParamField path="id" type="integer" required>User ID.</ParamField>
+<ParamField path="group" type="integer" required>Group ID.</ParamField>
+
+---
+
+## Remove user from a group
+
+`POST /users/{id}/remove-group/{group}`
+
+<ParamField path="id" type="integer" required>User ID.</ParamField>
+<ParamField path="group" type="integer" required>Group ID.</ParamField>

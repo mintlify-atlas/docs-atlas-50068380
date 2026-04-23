@@ -1,0 +1,168 @@
+---
+title: "Users, groups, and permissions in Dolibarr"
+description: "Create user accounts, organize them into groups, assign fine-grained module permissions, and configure API tokens for programmatic access."
+---
+
+Dolibarr's access control model gives you precise control over what each person in your organization can see and do. Permissions are granted at the module level — read, write, and delete independently — and can be assigned directly to individual users or inherited from groups. For most deployments, group-based permission management is far easier to maintain than per-user configuration.
+
+<Warning>
+The built-in administrator account should have a long, randomly generated password stored in a password manager. This account has unrestricted access to every setting, every record, and all backup and system tools. If it is compromised, the entire installation is compromised.
+</Warning>
+
+---
+
+## User accounts
+
+**Path:** Home → Users & Groups → New user (`/user/edit.php?action=create`)
+
+### Creating a user
+
+<Steps>
+  <Step title="Open the new user form">
+    Navigate to **Home → Users & Groups** and click **New user**. You must be an administrator to create users.
+  </Step>
+  <Step title="Fill in required fields">
+    | Field | Notes |
+    |---|---|
+    | Login | Unique username; used for login and API authentication |
+    | Password | Must meet the active password policy (see Security settings) |
+    | First name / Last name | Displayed throughout the interface and on documents |
+    | Email | Required for notifications and password-reset emails |
+    | Employee | Check this to link the user to an HR employee record |
+  </Step>
+  <Step title="Set the user type">
+    Choose **Internal user** (full backoffice access, subject to permissions) or **External user** (portal access only — see below).
+  </Step>
+  <Step title="Save and configure permissions">
+    After saving, open the **Permissions** tab on the user card to assign module-level permissions. In most cases, it is better to add the user to a group and manage permissions at the group level.
+  </Step>
+</Steps>
+
+### User types
+
+<Tabs>
+  <Tab title="Internal users">
+    Internal users can log in to the Dolibarr backoffice. Their access to specific modules and records is governed by the permissions assigned to them directly or via their groups. Most staff members — salespeople, accountants, warehouse operators — are internal users.
+  </Tab>
+  <Tab title="External users (portal)">
+    External users are contacts linked to a third party (customer, supplier) who have been granted portal access. They can log in to a limited customer/supplier portal to view their own invoices, orders, and tickets. They cannot access any backoffice functionality.
+
+    To enable portal access for a contact, open the contact record, check **Create an external account**, set a login and password, then confirm the user type is **External**.
+  </Tab>
+</Tabs>
+
+---
+
+## Groups
+
+**Path:** Home → Users & Groups → Groups and Permissions (`/user/group/list.php`)
+
+Groups let you define a role (e.g., "Sales team", "Accountant", "Warehouse operator") with a fixed set of permissions, then add users to that role. When permissions need to change for a role, you update the group once rather than updating every individual user.
+
+### Creating a group
+
+<Steps>
+  <Step title="Open the Groups page">
+    Navigate to **Home → Users & Groups → Groups and Permissions** and click **New group**.
+  </Step>
+  <Step title="Name the group">
+    Use a descriptive name that reflects the role, e.g., `Sales - Read only`, `Finance - Full access`, `Warehouse operator`.
+  </Step>
+  <Step title="Set permissions on the group">
+    After saving the group, open its **Permissions** tab and enable the specific permissions needed for this role across all relevant modules.
+  </Step>
+  <Step title="Add users to the group">
+    Open each user's card, go to the **Groups** tab, and add the group. Alternatively, open the group card and add users from the **Members** tab.
+  </Step>
+</Steps>
+
+<Tip>
+Use groups as your primary permission management mechanism. Keep direct per-user permissions for exceptions only (e.g., a specific user needs one extra permission not appropriate for their whole group). This keeps auditing simple.
+</Tip>
+
+---
+
+## Permissions
+
+Dolibarr's permission system is module-level and granular. Each enabled module exposes a set of permissions in three categories:
+
+| Permission type | Meaning |
+|---|---|
+| **Read** | View records in this module |
+| **Write** (create/modify) | Create new records and edit existing ones |
+| **Delete** | Remove records |
+
+Some modules expose additional sub-permissions (e.g., "validate invoices", "manage bank accounts", "export data").
+
+### Setting permissions on a user
+
+Open the user card → **Permissions** tab. All enabled modules are listed. Toggle individual permissions on or off. Changes take effect immediately on the user's next page load.
+
+### Setting permissions on a group
+
+Open the group card → **Permissions** tab. The same module/permission matrix is shown. All members of the group inherit these permissions in addition to any permissions set directly on their user cards.
+
+<Note>
+A user's effective permissions are the **union** of their individual permissions and all group permissions they inherit. You can grant a permission but you cannot deny an inherited group permission at the user level — if a user should not have a permission, remove them from the group that grants it.
+</Note>
+
+### Permissions for administrators
+
+Any user with the **Administrator** flag set on their user card bypasses the permission system entirely and has full access to all modules and setup pages. Reserve this flag for IT administrators only.
+
+---
+
+## API tokens
+
+**Path:** User card → API/Token tab (or Profile page)
+
+Each Dolibarr user can have a personal API token used to authenticate REST API calls. The token is equivalent to a session — anyone who holds it can perform API operations with that user's permissions.
+
+<Steps>
+  <Step title="Generate an API token">
+    Open the user card, navigate to the **API/Token** tab, and click **Generate new token**. Copy the token immediately — it is shown in full only once.
+  </Step>
+  <Step title="Use the token in API requests">
+    Pass the token as a URL parameter or HTTP header on every REST API call:
+
+    ```http
+    GET /api/index.php/invoices HTTP/1.1
+    Host: erp.example.com
+    DOLAPIKEY: <your-api-token>
+    ```
+
+    Or as a query parameter:
+
+    ```
+    GET https://erp.example.com/api/index.php/invoices?DOLAPIKEY=<your-api-token>
+    ```
+  </Step>
+  <Step title="Rotate tokens regularly">
+    Generate a new token and update any integrations that use the old one. There is no expiry mechanism in the core product, so rotation must be done manually.
+  </Step>
+</Steps>
+
+<Note>
+API tokens grant the same permissions as the user they belong to. Create a dedicated service user with only the permissions needed for the integration, and use that user's token rather than an administrator's token. Never embed an administrator API token in a third-party integration.
+</Note>
+
+---
+
+## Password policy
+
+**Path:** Home → Setup → Security (`/admin/security.php`)
+
+Configure password requirements to enforce a minimum security baseline across all internal user accounts.
+
+| Setting | Recommended value |
+|---|---|
+| Minimum password length | 12 characters |
+| Require mixed case | Yes |
+| Require digits | Yes |
+| Require special characters | Yes |
+| Password expiry (days) | 90–180 days for privileged users |
+| Login attempt lockout | Lock after 5 failed attempts |
+
+Password policy applies to internal users only. External (portal) users are subject to the same rules when their password is set or reset.
+
+See [Security configuration](/admin/security) for the full set of security settings including CAPTCHA, session timeout, and HTTP security headers.

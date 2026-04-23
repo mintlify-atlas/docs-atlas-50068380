@@ -1,0 +1,324 @@
+---
+title: "REST API endpoints for projects and tasks"
+description: "GET, POST, PUT, DELETE /projects and /tasks — manage Dolibarr projects, create and assign tasks, and track time spent via the REST API."
+---
+
+The Projects API lets you synchronize project and task data with external tools such as project management platforms, time-tracking systems, and customer portals. Projects link to customers and responsible users; tasks belong to projects and record progress and logged time.
+
+**Base paths:**
+- `/api/index.php/projects`
+- `/api/index.php/tasks`
+
+---
+
+## Projects
+
+### List projects
+
+`GET /projects`
+
+<ParamField query="status" type="integer">
+  Filter by project status: `0` = draft, `1` = open, `2` = closed.
+</ParamField>
+
+<ParamField query="user_id" type="integer">
+  Filter projects by the responsible user ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL filter criteria. Example: `(t.title:like:'Website%')`
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/projects?status=1&limit=50" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+### Create a project
+
+`POST /projects`
+
+<ParamField body="ref" type="string" required>
+  Unique project reference (e.g. `PROJ-2024-001`).
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  Project title.
+</ParamField>
+
+<ParamField body="socid" type="integer">
+  ID of the linked customer third party.
+</ParamField>
+
+<ParamField body="fk_user_resp" type="integer">
+  ID of the user responsible for the project.
+</ParamField>
+
+<ParamField body="date_start" type="integer">
+  Project start date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="date_end" type="integer">
+  Project end date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="opp_amount" type="number">
+  Opportunity amount (revenue forecast).
+</ParamField>
+
+<ParamField body="statut" type="integer">
+  Initial status: `0` = draft, `1` = open.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/projects" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ref": "PROJ-2024-001",
+    "title": "Website Redesign",
+    "socid": 42,
+    "fk_user_resp": 3,
+    "date_start": 1704067200,
+    "date_end": 1719792000,
+    "statut": 1
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created project.
+</ResponseField>
+
+---
+
+### Get a project
+
+`GET /projects/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the project to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Project ID.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Project reference.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Project title.
+</ResponseField>
+
+<ResponseField name="socid" type="integer">
+  ID of the linked customer.
+</ResponseField>
+
+<ResponseField name="fk_user_resp" type="integer">
+  ID of the responsible user.
+</ResponseField>
+
+<ResponseField name="date_start" type="integer">
+  Start date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="date_end" type="integer">
+  End date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="opp_amount" type="number">
+  Opportunity amount.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Project status: `0` draft, `1` open, `2` closed.
+</ResponseField>
+
+---
+
+### Update a project
+
+`PUT /projects/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the project to update.
+</ParamField>
+
+Supply any project fields in the request body. Only fields included in the payload are updated.
+
+---
+
+### Delete a project
+
+`DELETE /projects/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the project to delete.
+</ParamField>
+
+---
+
+### List tasks for a project
+
+`GET /projects/{id}/tasks`
+
+<ParamField path="id" type="integer" required>
+  ID of the project.
+</ParamField>
+
+Returns all tasks belonging to the specified project.
+
+---
+
+## Tasks
+
+### List tasks
+
+`GET /tasks`
+
+<ParamField query="project_id" type="integer">
+  Filter tasks by project ID.
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+---
+
+### Create a task
+
+`POST /tasks`
+
+<ParamField body="fk_projet" type="integer" required>
+  ID of the project this task belongs to.
+</ParamField>
+
+<ParamField body="label" type="string" required>
+  Task label or name.
+</ParamField>
+
+<ParamField body="fk_user_resp" type="integer">
+  ID of the user assigned to this task.
+</ParamField>
+
+<ParamField body="date_start" type="integer">
+  Task start date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="date_end" type="integer">
+  Task due date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="progress" type="integer">
+  Completion percentage (`0`–`100`).
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/tasks" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fk_projet": 5,
+    "label": "Design mockups",
+    "fk_user_resp": 3,
+    "date_start": 1704067200,
+    "date_end": 1706745600,
+    "progress": 0
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created task.
+</ResponseField>
+
+---
+
+### Get a task
+
+`GET /tasks/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the task to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Task ID.
+</ResponseField>
+
+<ResponseField name="label" type="string">
+  Task label.
+</ResponseField>
+
+<ResponseField name="fk_projet" type="integer">
+  ID of the parent project.
+</ResponseField>
+
+<ResponseField name="fk_user_resp" type="integer">
+  ID of the assigned user.
+</ResponseField>
+
+<ResponseField name="date_start" type="integer">
+  Start date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="date_end" type="integer">
+  Due date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="duration_effective" type="number">
+  Total time logged on this task in seconds.
+</ResponseField>
+
+<ResponseField name="progress" type="integer">
+  Completion percentage.
+</ResponseField>
+
+---
+
+### Update a task
+
+`PUT /tasks/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the task to update.
+</ParamField>
+
+Supply any task fields in the request body.
+
+---
+
+### Delete a task
+
+`DELETE /tasks/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the task to delete.
+</ParamField>

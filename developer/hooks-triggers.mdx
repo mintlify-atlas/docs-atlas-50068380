@@ -1,0 +1,308 @@
+---
+title: "Extend Dolibarr with hooks and triggers"
+description: "Use Dolibarr's hook and trigger system to add business logic, modify UI output, and react to ERP events without modifying core files."
+---
+
+Dolibarr provides two complementary extension mechanisms that let you add behavior to the ERP without touching core files. Hooks are synchronous injection points called during page rendering or query building; your module can insert HTML, modify SQL, or replace output entirely. Triggers are asynchronous event callbacks fired after a business action completes; your module reacts to events like invoice validation or order creation to run follow-up logic. Understanding which mechanism to use is the first decision when writing any non-trivial extension.
+
+<Note>
+  **Hooks vs. triggers at a glance**
+
+  Use **hooks** when you need to inject or modify content during a page request — adding a form field, filtering a list query, or appending action buttons. Use **triggers** when you need to react to a completed business event — sending a notification, writing an audit log, or synchronizing an external system. Hooks are UI/query-time; triggers are event-time, fired after the database transaction commits.
+</Note>
+
+## Hooks
+
+### How the hook system works
+
+Core pages and classes call `$hookmanager->executeHooks()` at named points throughout their logic. When this method is called, the hook manager iterates over every registered listener class, calls its `executeHooks()` method, and collects return values. A listener returns `0` to signal that core processing should continue, or `1` to signal that the core output should be replaced entirely by what the listener produced.
+
+```php
+// How core code calls a hook (you do not write this — it is already in core)
+$parameters = array('id' => $object->id);
+$reshook = $hookmanager->executeHooks(
+    'formObjectOptions',  // hook name / context
+    $parameters,          // contextual data passed to listeners
+    $object,              // the business object in scope
+    $action               // current page action ('create', 'edit', etc.)
+);
+if ($reshook < 0) {
+    setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+}
+```
+
+### Registering a hook listener
+
+Declare which hook contexts your module listens to in the module descriptor's `$module_parts` array. The `hooks` key holds a `data` array of context strings:
+
+```php
+// In modMyModule.class.php constructor
+$this->module_parts = array(
+    'hooks' => array(
+        'data' => array(
+            'thirdpartycard',      // third-party detail page
+            'invoicecard',         // invoice detail page
+            'ordersuppliercard',   // supplier order detail page
+        ),
+    ),
+);
+```
+
+Dolibarr loads the hook class from `htdocs/custom/mymodule/class/actions_mymodule.class.php` (by convention) when any of those contexts is active.
+
+### Implementing executeHooks
+
+<CodeGroup>
+
+```php class/actions_mymodule.class.php
+<?php
+/**
+ * Hook class for MyModule.
+ * Dolibarr instantiates this class when any of the registered contexts is active.
+ */
+class ActionsMyModule
+{
+    /** @var string Error string */
+    public $error = '';
+
+    /** @var string[] Error strings */
+    public $errors = array();
+
+    /** @var string Resprinted HTML output */
+    public $resprints = '';
+
+    /**
+     * Execute a hook action.
+     *
+     * @param  string       $action      Current page action ('create', 'edit', 'view', …)
+     * @param  array        $parameters  Contextual data provided by the hook call
+     * @param  CommonObject $object      The business object currently in scope
+     * @param  HookManager  $hookmanager The hook manager instance
+     * @return int   0 = keep core output (additive), 1 = replace core output
+     */
+    public function executeHooks($action, $parameters, &$object, &$hookmanager)
+    {
+        $error = 0;
+
+        if (in_array($parameters['currentcontext'], array('thirdpartycard'))) {
+            if ($action === 'view') {
+                // Add a custom info block below the third-party card
+                $this->resprints .= '<div class="fichecenter">';
+                $this->resprints .= '<div class="fichehalfleft">';
+                $this->resprints .= '<div class="underbanner clearboth"></div>';
+                $this->resprints .= '<table class="border centpercent tableforfield">';
+                $this->resprints .= '<tr>';
+                $this->resprints .= '<td class="titlefield">';
+                $this->resprints .= 'My custom field';
+                $this->resprints .= '</td>';
+                $this->resprints .= '<td>';
+                $this->resprints .= htmlspecialchars($object->array_options['options_myfieldcode'] ?? '—');
+                $this->resprints .= '</td>';
+                $this->resprints .= '</tr>';
+                $this->resprints .= '</table>';
+                $this->resprints .= '</div></div>';
+
+                return 0;  // 0 = append to core output, 1 = replace it
+            }
+        }
+
+        return 0;
+    }
+}
+```
+
+</CodeGroup>
+
+### Common hook context names
+
+| Context | Where it fires |
+|---------|----------------|
+| `thirdpartycard` | Third-party (customer/supplier) detail page |
+| `invoicecard` | Customer invoice detail page |
+| `ordersuppliercard` | Supplier order detail page |
+| `productcard` | Product/service detail page |
+| `formObjectOptions` | Hook name: extra options in object forms |
+| `addMoreActionsButtons` | Hook name: additional action buttons on object pages |
+| `printFieldListFrom` | Hook name: extra SQL JOIN in list queries |
+| `printFieldListWhere` | Hook name: extra SQL WHERE in list queries |
+| `completeTabsHead` | Hook name: additional tab entries on tabbed pages |
+| `globalcard` | Fires on almost every object card page |
+
+<Tip>
+  Search the Dolibarr source for `executeHooks(` to discover every available hook name and the parameters it passes. Each call site documents what `$parameters` contains via inline comments.
+</Tip>
+
+---
+
+## Triggers
+
+### How the trigger system works
+
+When a business action completes, the relevant `CommonObject` method calls `$this->call_trigger('EVENT_NAME', $user)`. The `Interfaces` class (`htdocs/core/class/interfaces.class.php`) discovers all trigger files by scanning `htdocs/core/triggers/` and each module's `core/triggers/` directory. It instantiates each trigger class in filename order and calls `runTrigger()`. If `runTrigger()` returns a negative value, the error is propagated back to the calling business method.
+
+### Trigger file naming convention
+
+```text
+interface_{priority}_{module}_{ClassName}.class.php
+```
+
+- `priority`: two-digit number (`01`–`99`). Lower numbers run first.
+- `module`: module name as registered in Dolibarr (e.g., `modMyModule` → `mymodule`).
+- `ClassName`: the PHP class name declared inside the file.
+
+**Examples from core:**
+
+```text
+interface_20_all_Logevents.class.php           # priority 20, runs for all modules
+interface_50_modNotification_Notification.class.php
+interface_95_modWebhook_WebhookTriggers.class.php
+```
+
+### Common trigger event codes
+
+| Event code | When it fires |
+|-----------|---------------|
+| `BILL_CREATE` | Customer invoice created |
+| `BILL_VALIDATE` | Customer invoice validated |
+| `BILL_DELETE` | Customer invoice deleted |
+| `ORDER_CREATE` | Sales order created |
+| `ORDER_VALIDATE` | Sales order validated |
+| `PROPAL_CREATE` | Quotation/proposal created |
+| `PROPAL_VALIDATE` | Quotation/proposal validated |
+| `COMPANY_CREATE` | Third party created |
+| `PAYMENT_CUSTOMER_CREATE` | Customer payment recorded |
+| `PRODUCT_CREATE` | Product/service created |
+| `USER_CREATE` | User account created |
+
+The full list is in `htdocs/core/triggers/README` and across the `call_trigger()` call sites in each module's class files.
+
+### Implementing a trigger
+
+Place your trigger class in `htdocs/custom/mymodule/core/triggers/`. Dolibarr will find it automatically because you declared `'triggers' => 1` in the module descriptor's `$module_parts`.
+
+<CodeGroup>
+
+```php interface_99_mymodule_MyTrigger.class.php
+<?php
+require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
+
+/**
+ * Trigger class for MyModule.
+ * Sends a webhook payload when a customer invoice is validated.
+ */
+class InterfaceMyTrigger extends DolibarrTriggers
+{
+    /**
+     * @param DoliDB $db  Database handler
+     */
+    public function __construct($db)
+    {
+        parent::__construct($db);
+
+        $this->name        = preg_replace('/^Interface/i', '', get_class($this));
+        $this->description = 'MyModule triggers: sends webhook on invoice validation.';
+        $this->version     = self::VERSIONS['prod'];
+        $this->picto       = 'mymodule@mymodule';
+    }
+
+    /**
+     * Function called when a Dolibarr business event occurs.
+     *
+     * @param string       $action  Event action code (e.g. 'BILL_VALIDATE')
+     * @param CommonObject $object  The business object involved
+     * @param User         $user    The user who triggered the action
+     * @param Translate    $langs   Language object
+     * @param Conf         $conf    Configuration object
+     * @return int  <0 on error, 0 if no action taken, >0 if OK
+     */
+    public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
+    {
+        if (!isModEnabled('mymodule')) {
+            return 0; // Module disabled — do nothing
+        }
+
+        switch ($action) {
+            case 'BILL_VALIDATE':
+                return $this->triggerBillValidate($object, $user, $langs, $conf);
+
+            // Add more cases here as needed:
+            // case 'ORDER_VALIDATE':
+            //     return $this->triggerOrderValidate($object, $user, $langs, $conf);
+
+            default:
+                return 0; // Event not handled by this trigger
+        }
+    }
+
+    /**
+     * Send a webhook when a customer invoice is validated.
+     *
+     * @param CommonObject $object
+     * @param User         $user
+     * @param Translate    $langs
+     * @param Conf         $conf
+     * @return int  <0 on error, >0 on success
+     */
+    private function triggerBillValidate($object, User $user, Translate $langs, Conf $conf)
+    {
+        require_once DOL_DOCUMENT_ROOT.'/core/lib/geturl.lib.php';
+
+        $webhookUrl = getDolGlobalString('MYMODULE_WEBHOOK_URL');
+        if (empty($webhookUrl)) {
+            return 0; // No webhook configured
+        }
+
+        $payload = json_encode(array(
+            'event'     => 'BILL_VALIDATE',
+            'ref'       => $object->ref,
+            'id'        => $object->id,
+            'amount'    => $object->total_ttc,
+            'currency'  => $conf->currency,
+            'validated_by' => $user->login,
+            'timestamp' => dol_now(),
+        ));
+
+        $result = getURLContent(
+            $webhookUrl,
+            'POST',
+            $payload,
+            1,
+            array('Content-Type: application/json')
+        );
+
+        if ($result['http_code'] >= 400 || $result['http_code'] === 0) {
+            $this->errors[] = 'Webhook delivery failed (HTTP '.$result['http_code'].')';
+            return -1;
+        }
+
+        dol_syslog(
+            __METHOD__.' Webhook delivered for invoice '.$object->ref,
+            LOG_INFO
+        );
+        return 1;
+    }
+}
+```
+
+</CodeGroup>
+
+### Error handling in triggers
+
+Triggers that return a negative value propagate the error back to the calling business operation. The standard pattern:
+
+1. Add error strings to `$this->errors[]`.
+2. Return a negative integer (typically `-1`).
+3. The calling code checks the return value and rolls back the transaction when appropriate.
+
+If your trigger performs a side effect (like an HTTP call) that should not block the core transaction, catch your errors internally and return `0` (not `1` and not negative) so that core processing continues regardless.
+
+```php
+// Non-blocking trigger pattern
+try {
+    $this->sendWebhook($object);
+} catch (Exception $e) {
+    // Log but do not propagate — do not block the invoice validation
+    dol_syslog(__METHOD__.' Webhook error: '.$e->getMessage(), LOG_WARNING);
+}
+return 0;
+```

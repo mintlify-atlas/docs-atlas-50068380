@@ -1,0 +1,403 @@
+---
+title: "Build a custom module for Dolibarr"
+description: "Create a Dolibarr module from scratch: descriptor class, database tables, UI pages, menu entries, permissions, and API endpoint wiring."
+---
+
+A Dolibarr module is a self-contained directory placed under `htdocs/custom/` that adds new entities, UI pages, menu entries, permissions, and API endpoints to the ERP without modifying any core file. Once the module is activated from the admin panel, Dolibarr reads its descriptor class and registers everything it declares. This guide walks through building a minimal module end to end.
+
+## File structure
+
+A minimal module looks like this:
+
+```text
+htdocs/custom/mymodule/
+├── core/
+│   ├── modules/
+│   │   └── modMyModule.class.php      # Module descriptor (required)
+│   └── triggers/
+│       └── interface_99_mymodule_MyTrigger.class.php  # Optional trigger
+├── class/
+│   ├── mymodule.class.php             # Business object class
+│   └── api_mymodule.class.php         # REST API class (optional)
+├── sql/
+│   ├── llx_mymodule.sql               # Table creation
+│   └── llx_mymodule.key.sql           # Indexes
+├── langs/
+│   └── en_US/
+│       └── mymodule.lang              # Translation strings
+├── tpl/                               # Optional PHP/HTML fragments
+└── mymodule_card.php                  # Main UI page
+```
+
+<Tip>
+  Skeleton files for all of these are generated automatically by the Module Builder. Use it to get started rather than writing files from scratch.
+</Tip>
+
+## Creation workflow
+
+<Steps>
+  <Step title="Enable the Module Builder">
+    In the Dolibarr admin interface, go to **Home → Setup → Modules/Applications** and enable **Module Builder**. Then access it via **Home → Tools → Module Builder**.
+
+    The Module Builder generates a complete skeleton directory under `htdocs/custom/` with all required files pre-filled with working boilerplate.
+  </Step>
+
+  <Step title="Write the module descriptor">
+    The descriptor class lives at `htdocs/custom/mymodule/core/modules/modMyModule.class.php`. It extends `DolibarrModules` and configures every aspect of the module in its constructor.
+
+    <CodeGroup>
+
+    ```php modMyModule.class.php
+    <?php
+    class modMyModule extends DolibarrModules
+    {
+        public function __construct($db)
+        {
+            global $langs, $conf;
+
+            $this->db = $db;
+
+            // Unique module ID — register yours at wiki.dolibarr.org/List_of_modules_id
+            $this->numero = 500000;
+            $this->rights_class = 'mymodule';
+            $this->family = 'other';
+            $this->name = preg_replace('/^mod/i', '', get_class($this));
+            $this->description = "My custom module";
+            $this->version = '1.0';
+            $this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
+            $this->picto = 'mymodule@mymodule';
+
+            // Module parts: which extension points does this module use?
+            $this->module_parts = array(
+                'triggers'  => 1,   // has triggers
+                'hooks'     => array('data' => array('thirdpartycard')),
+                'models'    => 0,
+                'api'       => 1,   // has API classes
+            );
+
+            // Tables to create on activation
+            $this->tabs = array();
+            $this->dictionaries = array();
+
+            // Menu entries
+            $this->menu[] = array(
+                'fk_menu'  => 'fk_mainmenu=mymodule',
+                'type'     => 'top',
+                'titre'    => 'MyModule',
+                'prefix'   => img_picto('', $this->picto, 'class="paddingright pictofixedwidth"'),
+                'mainmenu' => 'mymodule',
+                'url'      => '/mymodule/mymodule_card.php',
+                'langs'    => 'mymodule@mymodule',
+                'position' => 100,
+                'enabled'  => 'isModEnabled("mymodule")',
+                'perms'    => '$user->rights->mymodule->read',
+                'target'   => '',
+                'user'     => 0,
+            );
+
+            // Permissions
+            $this->rights[] = array(
+                0, 'read',   'Read mymodule objects',  'r', 'mymodule', 'read',
+            );
+            $this->rights[] = array(
+                0, 'write',  'Create/update mymodule', 'w', 'mymodule', 'write',
+            );
+            $this->rights[] = array(
+                0, 'delete', 'Delete mymodule objects','d', 'mymodule', 'delete',
+            );
+        }
+    }
+    ```
+
+    </CodeGroup>
+
+    <Note>
+      Module IDs must be unique across all installed modules. Reserve a number at `wiki.dolibarr.org/index.php/List_of_modules_id` before publishing your module.
+    </Note>
+  </Step>
+
+  <Step title="Define the database table">
+    Create the table in `sql/llx_mymodule.sql` and its indexes in `sql/llx_mymodule.key.sql`. Dolibarr runs these files automatically when the module is activated.
+
+    <CodeGroup>
+
+    ```sql llx_mymodule.sql
+    CREATE TABLE llx_mymodule (
+        rowid        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ref          VARCHAR(128) NOT NULL,
+        label        VARCHAR(255),
+        fk_soc       INTEGER,
+        status       SMALLINT DEFAULT 0,
+        date_creation DATETIME,
+        tms          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        fk_user_creat INTEGER,
+        fk_user_modif INTEGER,
+        entity        INTEGER DEFAULT 1
+    ) ENGINE=InnoDB;
+    ```
+
+    ```sql llx_mymodule.key.sql
+    ALTER TABLE llx_mymodule ADD INDEX idx_mymodule_ref (ref);
+    ALTER TABLE llx_mymodule ADD INDEX idx_mymodule_fk_soc (fk_soc);
+    ALTER TABLE llx_mymodule ADD CONSTRAINT fk_mymodule_fk_soc
+        FOREIGN KEY (fk_soc) REFERENCES llx_societe (rowid);
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Write the business object class">
+    The business object extends `CommonObject` and defines `$table_element`, `$element`, and a `$fields` array (Dolibarr v14+). The `$fields` array drives automatic SQL generation, validation, and extra-fields support.
+
+    <CodeGroup>
+
+    ```php class/mymodule.class.php
+    <?php
+    require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+
+    class MyModule extends CommonObject
+    {
+        /** @var string Module name for translation */
+        public $module = 'mymodule';
+
+        /** @var string Name of the SQL table */
+        public $table_element = 'mymodule';
+
+        /** @var string Element type (used in linked objects, hooks, etc.) */
+        public $element = 'mymodule';
+
+        /** @var string Picto for this object */
+        public $picto = 'mymodule@mymodule';
+
+        /**
+         * Typed field definitions (v14+).
+         * Keys map to column names in llx_mymodule.
+         * @var array<string,array{type:string,...}>
+         */
+        public $fields = array(
+            'rowid'         => array('type'=>'integer',  'label'=>'ID',     'enabled'=>1, 'visible'=>0, 'notnull'=>1, 'position'=>1),
+            'ref'           => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>1, 'visible'=>1, 'notnull'=>1, 'showoncombobox'=>1, 'position'=>10),
+            'label'         => array('type'=>'varchar(255)', 'label'=>'Label','enabled'=>1,'visible'=>1, 'position'=>20),
+            'fk_soc'        => array('type'=>'integer:Societe:societe/class/societe.class.php', 'label'=>'ThirdParty', 'enabled'=>1, 'visible'=>1, 'position'=>30),
+            'status'        => array('type'=>'smallint', 'label'=>'Status',  'enabled'=>1, 'visible'=>1, 'default'=>0, 'position'=>40),
+            'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation','enabled'=>1,'visible'=>-2,'position'=>50),
+            'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php','label'=>'UserAuthor','enabled'=>1,'visible'=>-2,'position'=>60),
+        );
+
+        /** @var int Object ID */
+        public $id;
+        /** @var string Reference */
+        public $ref;
+        /** @var string Label */
+        public $label = '';
+        /** @var int Linked third-party ID */
+        public $fk_soc;
+        /** @var int Status */
+        public $status = 0;
+
+        public function __construct(DoliDB $db)
+        {
+            parent::__construct($db);
+        }
+
+        /**
+         * Create a record in database.
+         * @param User $user  User creating the record
+         * @param int  $notrigger  0 = fire triggers, 1 = skip
+         * @return int  <0 on error, >0 = new rowid
+         */
+        public function create(User $user, $notrigger = 0)
+        {
+            return $this->createCommon($user, $notrigger);
+        }
+
+        /**
+         * Load object from database.
+         * @param int    $id   Row ID
+         * @param string $ref  Reference (alternative to id)
+         * @return int  <0 on error, 0 = not found, >0 = OK
+         */
+        public function fetch($id, $ref = null)
+        {
+            return $this->fetchCommon($id, $ref);
+        }
+
+        /**
+         * Update object in database.
+         * @param User $user
+         * @param int  $notrigger
+         * @return int  <0 on error, >0 = OK
+         */
+        public function update(User $user, $notrigger = 0)
+        {
+            return $this->updateCommon($user, $notrigger);
+        }
+
+        /**
+         * Delete object from database.
+         * @param User $user
+         * @param int  $notrigger
+         * @return int  <0 on error, >0 = OK
+         */
+        public function delete(User $user, $notrigger = 0)
+        {
+            return $this->deleteCommon($user, $notrigger);
+        }
+    }
+    ```
+
+    </CodeGroup>
+
+    `createCommon()`, `fetchCommon()`, `updateCommon()`, and `deleteCommon()` are implemented by `CommonObject` and auto-generate SQL from the `$fields` array. You only need to override them when you require custom logic.
+  </Step>
+
+  <Step title="Create the UI page">
+    UI pages are plain PHP scripts that initialize the Dolibarr environment, load the object, and output HTML using form helpers.
+
+    <CodeGroup>
+
+    ```php mymodule_card.php
+    <?php
+    // Load Dolibarr environment
+    $res = 0;
+    if (!$res && file_exists("../main.inc.php")) {
+        $res = @include "../main.inc.php";
+    }
+    if (!$res) {
+        die("Include of main fails");
+    }
+
+    require_once DOL_DOCUMENT_ROOT.'/custom/mymodule/class/mymodule.class.php';
+
+    $id = GETPOSTINT('id');
+    $object = new MyModule($db);
+
+    if ($id > 0) {
+        $object->fetch($id);
+    }
+
+    // Permission check
+    if (!$user->rights->mymodule->read) {
+        accessforbidden();
+    }
+
+    // Output HTML
+    llxHeader('', $langs->trans('MyModule'));
+
+    // … your page HTML here …
+
+    llxFooter();
+    $db->close();
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add an API endpoint">
+    Create `htdocs/custom/mymodule/class/api_mymodule.class.php` extending `DolibarrApi`. Restler discovers this class automatically when the module declares `'api' => 1` in `$module_parts`.
+
+    <CodeGroup>
+
+    ```php class/api_mymodule.class.php
+    <?php
+    require_once DOL_DOCUMENT_ROOT.'/core/api/class/dolibarrapi.class.php';
+    require_once DOL_DOCUMENT_ROOT.'/custom/mymodule/class/mymodule.class.php';
+
+    class MyModules extends DolibarrApi
+    {
+        public function __construct()
+        {
+            global $db;
+            parent::__construct($db);
+        }
+
+        /**
+         * Get a mymodule object by ID.
+         *
+         * @param int $id  ID of the object        {@from path}
+         * @return array                           {@type MyModule}
+         *
+         * @throws RestException 401 Not authenticated
+         * @throws RestException 403 Forbidden
+         * @throws RestException 404 Not found
+         */
+        public function get($id)
+        {
+            if (!DolibarrApiAccess::$user->rights->mymodule->read) {
+                throw new RestException(403);
+            }
+            $object = new MyModule($this->db);
+            $result = $object->fetch($id);
+            if ($result <= 0) {
+                throw new RestException(404, 'Object not found');
+            }
+            return $this->_cleanObjectDatas($object);
+        }
+
+        /**
+         * List mymodule objects.
+         *
+         * @param int    $limit  Max number of items per page {@from query}
+         * @param int    $page   Page number (0-indexed)      {@from query}
+         * @return array
+         */
+        public function index($limit = 100, $page = 0)
+        {
+            if (!DolibarrApiAccess::$user->rights->mymodule->read) {
+                throw new RestException(403);
+            }
+            // … fetch list and return …
+            return array();
+        }
+    }
+    ```
+
+    </CodeGroup>
+
+    The API is then reachable at `GET /api/index.php/mymodules/{id}`.
+  </Step>
+
+  <Step title="Activate and test the module">
+    Go to **Home → Setup → Modules/Applications**, find your module in the list, and click the toggle to enable it. Dolibarr will run your SQL files and register menus and permissions.
+
+    Check the PHP error log (or enable `$dolibarr_main_prod = 0` in `conf.php`) to catch any startup errors. With debug mode off, most PHP notices and warnings are suppressed.
+  </Step>
+</Steps>
+
+## Menu and permission reference
+
+### Menu entry array keys
+
+| Key | Description |
+|-----|-------------|
+| `fk_menu` | Parent menu entry identifier, or `0` for a top-level entry |
+| `type` | `top` (main menu bar) or `left` (left sidebar) |
+| `titre` | Label shown in the menu |
+| `mainmenu` | Internal identifier for the main menu section |
+| `url` | URL relative to the Dolibarr root (start with `/`) |
+| `position` | Sort order (lower numbers appear first) |
+| `enabled` | PHP expression evaluated to show/hide the entry |
+| `perms` | PHP expression for the permission check |
+| `user` | `0` = normal users, `2` = superadmin only |
+
+### Permissions array format
+
+```php
+// $this->rights[] format: [id, label, description, type, module, perm_key]
+$this->rights[] = array(0, 'read', 'Read objects', 'r', 'mymodule', 'read');
+```
+
+Leave the first element `0` — Dolibarr auto-assigns permission IDs at activation time.
+
+## Translation files
+
+Lang files are INI-formatted with one key-value pair per line:
+
+```ini
+# langs/en_US/mymodule.lang
+MyModule=My Module
+MyModuleDesc=Manage custom objects
+NewMyModule=New object
+```
+
+Load a lang file in PHP with `$langs->load('mymodule@mymodule')` and translate a key with `$langs->trans('MyModule')`.

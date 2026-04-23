@@ -1,0 +1,116 @@
+---
+title: "Authenticate with the Dolibarr REST API"
+description: "Get an API token via login or user settings, then pass it as DOLAPIKEY in request headers. Covers token management and security best practices."
+---
+
+Every Dolibarr API request requires a token to identify the calling user. Tokens carry the permissions of the associated Dolibarr user, so create dedicated low-privilege users for integrations rather than using admin credentials.
+
+## Get your token
+
+There are two ways to obtain an API token.
+
+### Method 1 — Admin panel (recommended)
+
+<Steps>
+  <Step title="Log in as an admin">
+    Open your Dolibarr installation and sign in with an administrator account.
+  </Step>
+  <Step title="Open the user card">
+    Go to **Home → Users & Groups** and click the user you want to grant API access.
+  </Step>
+  <Step title="Set the API token">
+    Scroll to the **API/REST** section of the user card. Enter a token value or copy the existing one.
+  </Step>
+  <Step title="Save the user">
+    Click **Save**. The token is now active and can be used immediately.
+  </Step>
+</Steps>
+
+### Method 2 — Login API
+
+<Warning>
+  The login API exposes your password in the request. It is disabled by default and must be explicitly enabled with the `API_ENABLE_LOGIN_API` constant. Use the admin panel method instead whenever possible. Never use the GET variant of this endpoint — it places credentials in the URL.
+</Warning>
+
+If the login API is enabled on your instance, send a `POST` request with your credentials:
+
+```bash
+curl -X POST "https://yourdomain.tld/api/index.php/login" \
+  -H "Content-Type: application/json" \
+  -d '{"login": "myuser", "password": "mypassword"}'
+```
+
+A successful response returns a `success.token` field:
+
+```json
+{
+  "success": {
+    "code": 200,
+    "token": "a1b2c3d4e5f6...",
+    "entity": 1,
+    "message": "Welcome myuser - This is your token..."
+  }
+}
+```
+
+Copy the value of `token` — this is your `DOLAPIKEY` for all subsequent requests.
+
+## Pass the token in requests
+
+Include the token on every API call using one of the two methods below.
+
+<CodeGroup>
+
+```bash HTTP header (recommended)
+curl -X GET "https://yourdomain.tld/api/index.php/thirdparties" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+```bash URL parameter (less secure)
+curl -X GET "https://yourdomain.tld/api/index.php/thirdparties?DOLAPIKEY=your_api_token_here"
+```
+
+</CodeGroup>
+
+The HTTP header method keeps the token out of server logs and browser history. Use the URL parameter method only for quick testing.
+
+## Permissions
+
+The API enforces the same permission model as the Dolibarr user interface. A token grants exactly the access the associated user has — nothing more.
+
+- A user without invoice read permission will receive `403 Forbidden` on `/invoices` endpoints.
+- A user without write permission on a resource will receive `403 Forbidden` on `POST`/`PUT`/`DELETE` calls for that resource.
+- Administrator users have full access to all endpoints.
+
+Create a dedicated API user for each integration and assign only the permissions that integration needs.
+
+## Security best practices
+
+- **Always use HTTPS.** Never send tokens over plain HTTP — they will be visible to anyone on the network path.
+- **Prefer the header method.** The URL parameter method places the token in server access logs, browser history, and referrer headers.
+- **Use per-integration users.** One shared admin token means a single compromised integration can access everything. Isolated users limit blast radius.
+- **Rotate tokens if compromised.** Open the user card, change the token value in the **API/REST** section, and save. The old token is immediately invalidated.
+- **Restrict permissions.** Audit each API user's Dolibarr permissions and remove any that are not required for its integration.
+
+## Test your connection
+
+Use the `/status` endpoint to verify your token is valid. It requires authentication and returns the Dolibarr version along with server information.
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/status" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+Expected response:
+
+```json
+{
+  "success": {
+    "code": 200,
+    "dolibarr_version": "19.0.0",
+    "access_locked": "0"
+  }
+}
+```
+
+If you receive a `401` or `403`, verify that the token value is correct and that the API module is enabled in **Home → Setup → Modules/Applications**.

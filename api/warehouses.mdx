@@ -1,0 +1,178 @@
+---
+title: "REST API endpoints for warehouses and stock"
+description: "GET, POST, PUT, DELETE /warehouses — manage Dolibarr warehouse locations, list stock per warehouse, and query products stored at each location."
+---
+
+The warehouses API lets you create and manage warehouse locations and query the products stored within each one. Warehouses are used throughout Dolibarr's inventory module to track where stock is held, route incoming receptions, and allocate stock on customer orders.
+
+**Base path:** `/api/index.php/warehouses`
+
+<Note>
+  Reading warehouses requires the `stock → lire` permission. Creating and updating warehouses requires `stock → creer`.
+</Note>
+
+---
+
+## List warehouses
+
+`GET /warehouses`
+
+Returns all warehouses for your entity.
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Zero-based page number.
+</ParamField>
+
+<ParamField query="category" type="integer">
+  Filter by warehouse category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Advanced filter expression. Example: `(t.statut:=:1)` for active warehouses.
+</ParamField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/warehouses" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## Get a warehouse
+
+`GET /warehouses/{id}`
+
+<ParamField path="id" type="integer" required>
+  Warehouse ID.
+</ParamField>
+
+<ResponseField name="id" type="integer">Warehouse ID.</ResponseField>
+<ResponseField name="ref" type="string">Warehouse reference code.</ResponseField>
+<ResponseField name="label" type="string">Display name.</ResponseField>
+<ResponseField name="description" type="string">Optional description.</ResponseField>
+<ResponseField name="statut" type="integer">Status: `1` = open, `0` = closed.</ResponseField>
+<ResponseField name="lieu" type="string">Physical location or address.</ResponseField>
+<ResponseField name="fk_parent" type="integer">ID of parent warehouse for hierarchical storage locations. `0` if top-level.</ResponseField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/warehouses/1" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+---
+
+## Create a warehouse
+
+`POST /warehouses`
+
+Required field: `label`.
+
+<ParamField body="label" type="string" required>
+  Display name for the warehouse.
+</ParamField>
+
+<ParamField body="ref" type="string">
+  Reference code. If omitted, Dolibarr will auto-generate one.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional description.
+</ParamField>
+
+<ParamField body="lieu" type="string">
+  Physical location or address.
+</ParamField>
+
+<ParamField body="fk_parent" type="integer">
+  Parent warehouse ID for sub-locations. Omit or set to `0` for a top-level warehouse.
+</ParamField>
+
+```bash
+curl -X POST "https://yourdomain.tld/api/index.php/warehouses" \
+  -H "DOLAPIKEY: your_api_token_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "label": "Main Warehouse",
+    "ref": "WH-MAIN",
+    "lieu": "123 Industrial Ave, Paris"
+  }'
+```
+
+---
+
+## Update a warehouse
+
+`PUT /warehouses/{id}`
+
+Pass any fields to update. Returns the updated warehouse object.
+
+<ParamField path="id" type="integer" required>Warehouse ID.</ParamField>
+
+---
+
+## Delete a warehouse
+
+`DELETE /warehouses/{id}`
+
+<Warning>
+  A warehouse can only be deleted if it has no stock movements or current stock. Dolibarr will return an error if the warehouse is in use.
+</Warning>
+
+---
+
+## List products in a warehouse
+
+`GET /warehouses/{id}/products`
+
+Returns all products that have stock in the specified warehouse.
+
+<ParamField path="id" type="integer" required>
+  Warehouse ID.
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Zero-based page number.
+</ParamField>
+
+<ParamField query="includestockdata" type="integer" default="0">
+  Set to `1` to include detailed stock level data per product.
+</ParamField>
+
+<ResponseField name="id" type="integer">Product ID.</ResponseField>
+<ResponseField name="ref" type="string">Product reference code.</ResponseField>
+<ResponseField name="label" type="string">Product display name.</ResponseField>
+<ResponseField name="stock_reel" type="number">Current stock quantity in this warehouse.</ResponseField>
+<ResponseField name="pmp" type="number">Weighted average cost price.</ResponseField>
+
+```bash
+curl -X GET "https://yourdomain.tld/api/index.php/warehouses/1/products?includestockdata=1&limit=50" \
+  -H "DOLAPIKEY: your_api_token_here"
+```
+
+<Tip>
+  To get stock levels for a specific product across all warehouses, use `GET /products/{id}/stock` from the [Products API](/api/products) instead.
+</Tip>

@@ -1,0 +1,201 @@
+---
+title: "Projects, tasks, and calendar management"
+description: "Organize work with Dolibarr's project and task management tools, shared calendar, event organization, and knowledge base features."
+---
+
+Dolibarr ties project work, calendar events, support tickets, and internal knowledge into a single collaboration layer. Time logged against tasks, meetings booked in the agenda, and tickets raised by customers all flow through linked records — so nothing falls through the cracks.
+
+## Projects module
+
+Enable the Projects module at **Setup → Modules → Projects**.
+
+### Creating a project
+
+Navigate to **Projects → New project**.
+
+| Field | Description |
+|---|---|
+| **Reference** | Unique project code (e.g. `PROJ-2026-001`). |
+| **Title** | Short descriptive name. |
+| **Project leader** | The Dolibarr user responsible for delivery. |
+| **Third party** | Link the project to a customer record for client projects. |
+| **Start / end date** | Used in the Gantt view and progress reporting. |
+| **Budget** | Planned budget in your base currency. Compared against time costs and expenses. |
+| **Status** | Draft, Open, or Closed. Only open projects appear in time-entry dropdowns. |
+
+<Tip>
+Link a project to a third party to see all related invoices, orders, and proposals from the project's **Elements** tab — useful for client project managers tracking billing against deliverables.
+</Tip>
+
+### Assigning team members
+
+Open the project's **Members** tab. Add Dolibarr users and set their role on the project (optional). Only assigned members can log time against the project by default; adjust this in project settings.
+
+## Tasks
+
+Create tasks within a project from the **Tasks** tab or at **Projects → Tasks → New task**.
+
+### Task fields
+
+| Field | Description |
+|---|---|
+| **Parent task** | Nest tasks to create sub-tasks for complex deliverables. |
+| **Assigned to** | One or more Dolibarr users responsible for the task. |
+| **Planned start / end** | Dates shown in the Gantt view. |
+| **Progress** | Percentage complete (0–100), updated manually or from time entries. |
+| **Status** | To do, In progress, Blocked, Done. |
+
+### Tracking time on tasks
+
+<Steps>
+  <Step title="Log time from the task">
+    Open the task and click **Add time**. Enter the date, the number of hours spent, and optionally a note describing the work done.
+  </Step>
+  <Step title="Log time from the timesheet">
+    Employees can log time across multiple tasks in a weekly grid view via **HRM → Timesheets**. Hours sync back to the individual task records.
+  </Step>
+  <Step title="Review project time totals">
+    The project summary shows total planned hours, total hours logged, and the remaining budget. Use **Projects → Project report** for a breakdown by task and user.
+  </Step>
+</Steps>
+
+### Gantt-like task view
+
+The **Gantt view** is available at **Projects → [your project] → Gantt** (backed by `ganttview.php`). It displays all tasks as horizontal bars on a timeline.
+
+- Tasks are sorted by planned start date.
+- Bar width represents task duration.
+- Completed percentage is shown as a filled portion of each bar.
+- Use the **date range filter** at the top to zoom in on a specific period.
+
+<Note>
+Dolibarr does not currently support task dependencies in the Gantt view. Tasks can be sequenced visually by setting start and end dates, but automatic dependency-driven rescheduling is not available.
+</Note>
+
+### Filtering tasks
+
+On the task list view (`tasks.php`), use the filter panel to narrow by:
+
+- Project
+- Assigned user
+- Status
+- Date range (planned start or end)
+
+Save frequently used filter combinations as a bookmark for quick access.
+
+## Shared calendar / Agenda
+
+The Agenda module provides a shared calendar for all Dolibarr users.
+
+### Creating an event
+
+<Steps>
+  <Step title="Open the calendar">
+    Go to **Agenda → New event** or click a timeslot directly on the calendar grid.
+  </Step>
+  <Step title="Set event details">
+    Choose an event type (Meeting, Phone call, Email, Task reminder, etc.), set the start and end time, and add a description.
+  </Step>
+  <Step title="Assign participants">
+    Add internal users and external contacts as participants. Each participant can have a status (invited, confirmed, declined).
+  </Step>
+  <Step title="Link to a record">
+    Optionally link the event to a third party, project, opportunity, or customer order. Linked events appear on the relevant record's **Agenda** tab.
+  </Step>
+</Steps>
+
+### Recurring events
+
+When creating or editing an event, enable **Recurrence** and set the pattern:
+
+- Daily, weekly, monthly, or custom interval
+- End by date, or after a fixed number of occurrences
+
+Each occurrence is a separate event record, so individual occurrences can be edited without affecting the series.
+
+### iCal export and external calendar integration
+
+<Tabs>
+  <Tab title="iCal export">
+    Go to **Agenda → Export (iCal)**. Dolibarr generates an `.ics` file of your events that you can import into any calendar application (Apple Calendar, Thunderbird, etc.).
+  </Tab>
+  <Tab title="Google Calendar sync">
+    Copy your personal iCal feed URL from **My account → External calendar**. Subscribe to this URL in Google Calendar (**Other calendars → From URL**) for a read-only live feed of your Dolibarr events.
+  </Tab>
+  <Tab title="Outlook / Exchange">
+    Use the same iCal subscription URL in Outlook (**Add calendar → From internet**). Updates in Dolibarr propagate to Outlook within the sync interval set by your calendar application.
+  </Tab>
+</Tabs>
+
+<Tip>
+The iCal feed is user-specific. Each team member has their own URL showing only the events assigned to them. Administrators can generate feeds for other users if needed.
+</Tip>
+
+## Event organisation module
+
+Enable **Event Organisation** at **Setup → Modules → Event organisation** to manage conferences, workshops, and other ticketed events.
+
+- Create an event with venue, date, maximum capacity, and description.
+- Add sessions or sub-events (breakout tracks, workshops).
+- Open registration: generate a public registration link that attendees use to sign up.
+- Track attendee list, send confirmation emails, and generate attendance PDFs.
+- Mark attendees as present on the day to produce a final attendance record.
+
+## Ticket system
+
+Enable the **Ticket** module at **Setup → Modules → Ticket** to manage customer support requests.
+
+<Steps>
+  <Step title="Customer opens a ticket">
+    Customers can submit tickets via the customer portal, or internal agents can create tickets manually from **Support → Tickets → New ticket**.
+  </Step>
+  <Step title="Assign and categorise">
+    Set the ticket type, severity, and assign it to an agent or a support group. Link the ticket to the customer's third-party record.
+  </Step>
+  <Step title="Respond and track">
+    Add messages to the ticket thread. Each response is logged with a timestamp and user. Customers receive email notifications for each update if notifications are configured.
+  </Step>
+  <Step title="Resolve and close">
+    Change the status to **Resolved** when the issue is fixed, then **Closed** once confirmed by the customer or after a grace period.
+  </Step>
+</Steps>
+
+### Ticket status workflow
+
+```text
+New (open) → Assigned → In progress → Pending customer → Resolved → Closed
+```
+
+Statuses are configurable at **Setup → Dictionaries → Ticket statuses**.
+
+## Knowledge management
+
+Enable **Knowledge Management** at **Setup → Modules → Knowledge management** to build an internal and customer-facing knowledge base.
+
+- Create articles with a title, content (rich text), and category.
+- Assign an article's visibility to **internal** (staff only) or **public** (accessible via the customer portal).
+- Link related articles to each other for navigation.
+- Use the full-text search at **Knowledge → Search** to find articles by keyword.
+
+<Tip>
+Link a knowledge base article to a ticket when closing it. This builds a searchable archive of solved problems that both agents and customers can reference.
+</Tip>
+
+## Surveys (OpenSurvey)
+
+Enable the **OpenSurvey** module to create and distribute questionnaires.
+
+<Steps>
+  <Step title="Create a survey">
+    Go to **Tools → Surveys → New survey**. Set the title, description, and whether responses are anonymous.
+  </Step>
+  <Step title="Add questions">
+    Add questions of various types: single choice, multiple choice, text field, rating scale, or free text.
+  </Step>
+  <Step title="Distribute">
+    Publish the survey to generate a public URL. Share it with customers, partners, or employees. Internal surveys can be shared only with Dolibarr users.
+  </Step>
+  <Step title="Review results">
+    View aggregated results on the survey's **Results** tab. Export raw responses to CSV for further analysis.
+  </Step>
+</Steps>

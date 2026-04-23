@@ -1,0 +1,158 @@
+---
+title: "Dolibarr modules: activate what you need"
+description: "Browse Dolibarr's 100+ built-in modules organized by business area. Learn how to enable, configure, and combine modules for your workflow."
+---
+
+## Managing modules
+
+All modules are managed from a single location: **Home → Setup → Modules/Applications**.
+
+Each module has a toggle switch. Turning a module on:
+
+- Adds its menu entries to the navigation bar
+- Creates any required database tables
+- Makes its permissions available to assign to user groups
+
+Turning a module off hides everything related to it without deleting any data. You can re-enable the module later and all previous records remain intact.
+
+## Modules by business area
+
+<AccordionGroup>
+  <Accordion title="CRM & Third Parties">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Third Parties** | `modSociete` | Central registry for customers, prospects, and suppliers. All other records link back to a third party. |
+    | **Contacts** | (part of Societe) | Individual contacts attached to companies or standalone. Stores email, phone, and role. |
+    | **Commercial Proposals** | `modPropale` | Create and send quotes with online signing. Proposals can be converted to orders or invoices. |
+    | **Opportunities/Leads** | (part of Societe CRM) | Track sales pipeline stages from lead to closed deal. |
+    | **Partnership** | `modPartnership` | Manage partner relationships and agreements. |
+  </Accordion>
+
+  <Accordion title="Sales & Billing">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Customer Orders** | `modCommande` | Manage sales orders from creation to shipping. |
+    | **Customer Invoices** | `modFacture` | Create invoices and credit notes, track payment status. |
+    | **Payments** | `modPayment` | Record payments against invoices and reconcile bank accounts. |
+    | **Contracts/Subscriptions** | `modContrat` | Recurring service contracts with auto-renewal and billing. |
+    | **Interventions** | `modFicheinter` | Log on-site or remote interventions billable to customers. |
+    | **Shipping** | `modExpedition` | Generate shipping notes and track deliveries. |
+    | **Point of Sale** | `modTakePos` | Full-featured POS for retail — cash register, receipt printing, barcode scanning. |
+    | **Ticket System** | `modTicket` | Customer support tickets with status tracking and email notifications. |
+  </Accordion>
+
+  <Accordion title="Purchasing">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Suppliers** | `modFournisseur` | Supplier records, pricing, and contact management. |
+    | **Supplier Orders** | `modSupplierOrder` | Purchase orders sent to suppliers, with reception tracking. |
+    | **Supplier Invoices** | `modSupplierInvoice` | Record and pay supplier invoices and credit notes. |
+    | **Supplier Proposals** | `modSupplierProposal` | Request pricing from suppliers before issuing a purchase order. |
+    | **Reception** | `modReception` | Record goods received against purchase orders. |
+    | **Incoterms** | `modIncoterm` | Add standard trade terms (FOB, CIF, etc.) to purchase orders. |
+  </Accordion>
+
+  <Accordion title="Inventory & Products">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Products** | `modProduct` | Product and service catalogue with pricing, VAT, and descriptions. |
+    | **Services** | `modService` | Separate module flag for service-type items (often enabled alongside Products). |
+    | **Stock / Warehouse** | `modStock` | Track stock levels across multiple warehouses with movement history. |
+    | **Stock Transfer** | `modStockTransfer` | Move stock between warehouses with a transfer document. |
+    | **Lots / Serial numbers** | `modProductBatch` | Assign lot numbers or serial numbers to inventory items for full traceability. |
+    | **Bill of Materials** | `modBom` | Define component lists for manufactured products. |
+    | **Manufacturing (MRP)** | `modMrp` | Create manufacturing orders and consume BOM components from stock. |
+    | **Workstations** | `modWorkstation` | Define workstations and capacity for production planning. |
+    | **Product Variants** | `modVariants` | Manage product variants (size, colour, etc.) from a single parent product. |
+    | **Barcodes** | `modBarcode` | Generate and print barcodes for products and stock locations. |
+  </Accordion>
+
+  <Accordion title="Finance & Accounting">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Accounting** | `modAccounting` | Double-entry accounting with chart of accounts, journals, and ledger. |
+    | **Bank / Cash accounts** | `modBanque` | Manage bank and cash accounts; reconcile with statements. |
+    | **SEPA Direct Debit** | `modPrelevement` | Generate SEPA direct debit and credit transfer files. |
+    | **Margins** | `modMargin` | Calculate and report margins on invoices and orders. |
+    | **Loans** | `modLoan` | Track loan repayment schedules. |
+    | **Donations** | `modDon` | Record and acknowledge charitable donations (useful for non-profits). |
+    | **Assets** | `modAsset` | Fixed asset register with depreciation calculations. |
+    | **Tax** | `modTax` | Manage tax declarations and social contribution schedules. |
+    | **Multi-Currency** | `modMultiCurrency` | Issue invoices and record payments in foreign currencies with exchange rate management. |
+  </Accordion>
+
+  <Accordion title="HR & Payroll">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **HRM** | `modHRM` | Employee records including contracts, positions, and skills. |
+    | **Leave management** | `modHoliday` | Employees request leave; managers approve. Balance tracking per leave type. |
+    | **Expense reports** | `modExpenseReport` | Employees submit expenses; managers approve and accounts reimburse. |
+    | **Recruitment** | `modRecruitment` | Manage job postings and candidate applications. |
+    | **Salaries** | `modSalaries` | Record salary payments per employee. |
+    | **Travel expenses** | `modDeplacement` | Log km-based or fixed travel costs. |
+  </Accordion>
+
+  <Accordion title="Collaboration">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Projects & Tasks** | `modProjet` | Create projects, assign tasks, track time, and report progress. |
+    | **Agenda** | `modAgenda` | Shared calendar with iCal/vCal import and export for integration with external calendar apps. |
+    | **Ticket System** | `modTicket` | Support ticket queue with email integration and knowledge base links. |
+    | **Knowledge Management** | `modKnowledgeManagement` | Internal wiki and FAQ articles searchable by all users. |
+    | **Event Organisation** | `modEventOrganization` | Plan and manage events with attendee registration. |
+    | **Surveys** | `modOpenSurvey` | Create and distribute surveys (based on OpenSurvey/LimeSurvey format). |
+    | **Resources** | `modResource` | Book shared resources (rooms, vehicles, equipment) via the agenda. |
+  </Accordion>
+
+  <Accordion title="E-commerce & Integrations">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **Stripe** | `modStripe` | Accept card payments via Stripe on invoices and proposals. |
+    | **PayPal** | `modPaypal` | Accept PayPal payments. |
+    | **Paybox** | `modPaybox` | Accept payments via Paybox (French payment gateway). |
+    | **Webhook** | `modWebhook` | Send HTTP POST notifications to external URLs on Dolibarr events. |
+    | **Zapier** | `modZapier` | Connect Dolibarr to 5,000+ apps via Zapier triggers and actions. |
+    | **REST/SOAP API** | `modApi` / `modWebServices` | Enable the REST API (`/api/index.php`) and legacy SOAP web services. |
+    | **Web Portal** | `modWebPortal` | Customer-facing portal for viewing invoices and proposals. |
+    | **Website / CMS** | `modWebsite` | Build public-facing websites and landing pages inside Dolibarr. |
+    | **OAuth** | `modOauth` | Authenticate against external OAuth providers. |
+    | **Dynamic prices** | `modDynamicPrices` | Formula-based pricing rules that adjust prices automatically. |
+  </Accordion>
+
+  <Accordion title="Point of Sale">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **TakePos** | `modTakePos` | Full point-of-sale interface with touchscreen support, cash drawer management, receipt printing via ESC/POS printers, and barcode scanning. Integrates with stock and invoicing modules. |
+  </Accordion>
+
+  <Accordion title="Other utilities">
+    | Module | Internal name | Description |
+    |---|---|---|
+    | **ECM (Document management)** | `modECM` | Electronic document management — store, organise, and version documents. |
+    | **Email Collector** | `modEmailCollector` | Poll an IMAP mailbox and automatically create tickets or third parties from incoming emails. |
+    | **Mass mailing** | `modMailing` | Send bulk emails to contact lists with template support and unsubscribe tracking. |
+    | **LDAP** | `modLdap` | Authenticate users against an LDAP/Active Directory server. |
+    | **Notification** | `modNotification` | Send automatic email or internal alerts on configurable events. |
+    | **AI** | `modAi` | Integrate AI-powered text generation via external API for drafting descriptions, emails, etc. |
+    | **Members / Associations** | `modAdherent` | Membership and subscription management for associations and clubs. |
+    | **Bookmarks** | `modBookmark` | Save frequently visited Dolibarr pages for quick access. |
+    | **Cron / Scheduler** | `modCron` | Run background tasks on a schedule (send reminders, import data, etc.). |
+    | **Categories** | `modCategorie` | Tag any record with categories for filtering and reporting. |
+    | **Data export/import** | `modExport` / `modImport` | Export records to CSV/Excel or import data from spreadsheets. |
+    | **Intracomm report** | `modIntracommreport` | Generate EU intrastat trade reports. |
+  </Accordion>
+</AccordionGroup>
+
+## The DoliStore marketplace
+
+The 100+ built-in modules cover most standard business workflows. For specialised needs, the **[DoliStore](https://www.dolistore.com)** marketplace offers more than **1,000 additional modules** from third-party developers — including payroll engines, sector-specific compliance tools, e-commerce connectors, and advanced analytics.
+
+Most DoliStore modules are installed by uploading a `.zip` file through **Home → Setup → Modules/Applications → Deploy/install external module**.
+
+## Building custom modules
+
+<Tip>
+  Dolibarr includes a **Module Builder** (`modModuleBuilder`) that generates the scaffold for a new module through a guided form — no manual file creation required. Enable it from **Home → Setup → Modules/Applications**, then access it at **Tools → Module Builder**.
+</Tip>
+
+For full documentation on module development — including hooks, triggers, object classes, and the module descriptor format — see the [module development guide](/developer/module-development).

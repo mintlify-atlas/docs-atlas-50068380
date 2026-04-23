@@ -1,80 +1,125 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Get started with Dolibarr in 15 minutes"
+description: "From a fresh install to your first invoice: activate key modules, create a customer, and generate an invoice in Dolibarr step by step."
 ---
 
-## Get started in three steps
+This guide walks you through your first session in Dolibarr — from logging in after a fresh install to generating and recording payment on your first customer invoice. By the end you will have seen the core sales workflow and know where to go next.
 
-Get your documentation site running locally and make your first customization.
+## Before you begin
 
-### Step 1: Set up your local environment
+Make sure you have completed the installation and run the browser setup wizard. You should be able to log in as an administrator. If you have not installed Dolibarr yet, see the [Installation guide](/installation).
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Activate the modules you need
 
-### Step 2: Deploy your changes
+Dolibarr ships with all modules disabled. You choose exactly what to turn on.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Open the Modules panel">
+    Log in, then go to **Home → Setup → Modules/Applications**. You will see all available modules organized by category.
+  </Step>
+  <Step title="Enable core modules">
+    Toggle on the following modules — each one activates immediately without a page reload:
+    - **Third Parties** (CRM section) — manages customers and suppliers
+    - **Products / Services** (Products section) — your product catalog
+    - **Proposals** (CRM section) — commercial quotes with online signing
+    - **Customer Orders** (Sales section) — converts proposals to confirmed orders
+    - **Customer Invoices** (Finance section) — generates invoices and tracks payments
+    - **Banks and Cash** (Finance section) — bank account management for recording payments
+  </Step>
+  <Step title="Configure each module (optional)">
+    After enabling a module, click the wrench icon next to it to open its configuration page. For now, you can leave defaults and return to configure numbering sequences, PDF templates, and payment terms later via **Home → Setup → Company/Organization**.
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Create your first customer
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Open the Third Parties list">
+    In the top menu, go to **Third Parties → New Third Party** (or navigate to the Third Parties menu that appeared after enabling the module).
+  </Step>
+  <Step title="Fill in the customer details">
+    Enter the company name in the **Name** field. Set the **Customer** toggle to "Yes" (this marks the record as a customer so invoices can be linked to it). Add an email address and country. Click **Save**.
+  </Step>
+  <Step title="Review the customer card">
+    You are now on the third-party card. From here you can add contacts, view linked invoices and orders, log events, and see the full relationship history.
+  </Step>
+</Steps>
 
-### Step 3: Go live
+## Add a product or service
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+<Steps>
+  <Step title="Go to the product list">
+    Navigate to **Products/Services → New Product** (or **New Service** for a service item).
+  </Step>
+  <Step title="Enter product details">
+    Fill in the **Reference** (your internal code, e.g. `SVC-001`), **Label** (display name), selling **Price** (excluding tax), and **VAT rate**. For a service, set the type to "Service" so stock tracking is skipped.
+  </Step>
+  <Step title="Save the product">
+    Click **Save**. The product is now available to add to proposals, orders, and invoices.
+  </Step>
+</Steps>
 
-## Next steps
+## Create an invoice
 
-Now that you have your docs running, explore these key features:
+For this quickstart, we create an invoice directly (skipping the proposal → order steps). You can link all three later once you are familiar with the workflow.
+
+<Steps>
+  <Step title="Open the invoices list">
+    Navigate to **Billing/Accounting → Customers → Invoices → New Invoice**.
+  </Step>
+  <Step title="Select the customer">
+    In the **Customer** field, search for and select the customer you created above.
+  </Step>
+  <Step title="Add a product line">
+    In the invoice lines section, click **Add a line**. Search for your product by reference or label. Enter the quantity. The unit price and VAT will be filled from the product record. Click **Add**.
+  </Step>
+  <Step title="Validate the invoice">
+    Review the total amounts. Click **Validate** to change the invoice from draft to validated status. Dolibarr assigns a definitive invoice reference number (e.g. `FA2024-0001`).
+  </Step>
+  <Step title="Send to the customer (optional)">
+    Click **Send by email** to send the invoice PDF directly from Dolibarr using your configured SMTP settings.
+  </Step>
+</Steps>
+
+## Record a payment
+
+<Steps>
+  <Step title="Open the validated invoice">
+    On the invoice card, scroll down to the **Payments** section and click **Add payment**.
+  </Step>
+  <Step title="Enter payment details">
+    Select the payment date, payment method (bank transfer, cheque, card, etc.), and the bank account the payment was received into. Enter the amount paid.
+  </Step>
+  <Step title="Save the payment">
+    Click **Save**. If the amount matches the invoice total, the invoice status changes to **Paid**.
+  </Step>
+</Steps>
+
+## Check your dashboard
+
+Go to **Home** to see the main dashboard. After completing the steps above you will see:
+
+- Outstanding invoices panel (should now show zero if paid)
+- Recent activity feed showing the invoice and payment
+- Statistics modules that update as you add more data
+
+<Tip>
+  To integrate Dolibarr with external applications, go to **Home → Users & Groups**, open your user card, and set an API token. You can then call the REST API at `/api/index.php/` — try the built-in explorer at `/api/index.php/explorer` to see all available endpoints without writing any code.
+</Tip>
+
+## What to do next
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Modules overview" icon="puzzle-piece" href="/modules-overview">
+    Discover the full range of modules available for purchasing, HR, projects, and more.
+  </Card>
+  <Card title="Company configuration" icon="gear" href="/admin/configuration">
+    Set up your company profile, logo, email settings, and PDF templates.
+  </Card>
+  <Card title="Sales workflow" icon="file-invoice-dollar" href="/features/sales-invoicing">
+    Learn the full proposal → order → invoice → payment cycle.
+  </Card>
+  <Card title="REST API" icon="code" href="/api/overview">
+    Connect Dolibarr to your other tools using the REST API.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

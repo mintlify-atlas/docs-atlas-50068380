@@ -1,0 +1,222 @@
+---
+title: "Contribute to Dolibarr development"
+description: "Learn how to report bugs, submit pull requests, write translations, and follow Dolibarr's coding standards and branch conventions."
+---
+
+Dolibarr is an open-source project developed on GitHub by a community of contributors worldwide. Contributions take many forms: bug reports, feature requests, code patches, translations, and documentation improvements. This guide covers the mechanics of each, so you can participate effectively and get your contributions accepted as efficiently as possible.
+
+<Tip>
+  Development always targets the **`develop`** branch. Bug fixes may target older stable branches, but new features must go to `develop`. Never open a PR against `main` or a version tag.
+</Tip>
+
+## Reporting bugs and requesting features
+
+All issues are tracked on [GitHub Issues](https://github.com/Dolibarr/dolibarr/issues).
+
+**Before filing an issue:**
+- Search existing issues to confirm yours has not already been reported.
+- Check whether you are running the latest patch release of your version.
+
+**Required information for a bug report:**
+- Dolibarr version (visible at **Home → System info**)
+- PHP version and web server (Apache/Nginx)
+- Database type and version (MySQL/MariaDB/PostgreSQL)
+- Operating system
+- Exact steps to reproduce the problem
+- Expected behavior vs. actual behavior
+- Screenshots or screencasts when the issue is visual
+- Relevant log entries (enable debug logging via `$dolibarr_main_prod = 0` in `conf.php`)
+
+Feature requests should be filed as GitHub Issues with the label **enhancement**. Describe the use case, not just the implementation, so the community can discuss the best approach.
+
+<Warning>
+  GitHub Issues is not a support forum. Questions about how to use Dolibarr belong on the [Dolibarr community forums](https://www.dolibarr.org/forum.php). Issues that are support requests will be closed.
+</Warning>
+
+## Development environment setup
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [github.com/Dolibarr/dolibarr](https://github.com/Dolibarr/dolibarr) to your own GitHub account. Clone your fork locally:
+
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/dolibarr.git
+    cd dolibarr
+    git remote add upstream https://github.com/Dolibarr/dolibarr.git
+    ```
+  </Step>
+
+  <Step title="Set up a local web server">
+    Point your web server (Apache or Nginx) document root at the `htdocs/` subdirectory. Dolibarr requires:
+
+    - PHP 7.4 or later (PHP 8.x recommended)
+    - A MySQL/MariaDB or PostgreSQL database
+    - Standard PHP extensions: `gd`, `curl`, `json`, `mbstring`, `zip`
+
+    Alternatively, use Docker or a local stack tool (XAMPP, Laragon, MAMP) that can target a specific document root.
+  </Step>
+
+  <Step title="Run the install wizard">
+    Navigate to `http://localhost/` (your configured root). Dolibarr detects the absence of `htdocs/conf/conf.php` and launches the install wizard. Complete the wizard to create the database schema and the initial admin account.
+  </Step>
+
+  <Step title="Configure for development">
+    In `htdocs/conf/conf.php`, set:
+
+    ```php
+    $dolibarr_main_prod = '0';   // Show PHP errors and notices
+    ```
+
+    This disables production mode and makes debug information visible in the browser and logs.
+  </Step>
+</Steps>
+
+## Branch conventions
+
+| Branch | Purpose |
+|--------|---------|
+| `develop` | Main integration branch — all new features target here |
+| `20.0`, `19.0`, … | Stable maintenance branches for released major versions |
+| `main` | Not used for development; reflects latest stable release |
+
+For **new features**, always branch from `develop`:
+
+```bash
+git fetch upstream
+git checkout -b feature/my-feature upstream/develop
+```
+
+For **bug fixes**, target the oldest affected stable branch when possible (the project recommends N−2 where N is the latest version). The core team will backport or merge forward as needed:
+
+```bash
+git checkout -b fix/my-bug upstream/20.0
+```
+
+## Pull request workflow
+
+<Steps>
+  <Step title="Create a feature branch from develop">
+    ```bash
+    git checkout -b feature/my-feature upstream/develop
+    ```
+  </Step>
+
+  <Step title="Make changes following coding standards">
+    - PSR-2 code style for all PHP files
+    - PHPDoc comments on every public method (`@param`, `@return`, `@throws`)
+    - No new external dependencies added to `htdocs/includes/` without prior approval from the core team
+    - New database tables or columns must first be approved in a standalone PR containing only the schema change; begin the implementation only after that PR is merged
+    - Include a translation key in `langs/en_US/` for every new user-facing string
+
+    Commit messages follow this format:
+
+    ```
+    KEYWORD #ISSUENUM Short description under 50 characters
+
+    Longer description explaining why this change is needed,
+    what it does, and any notable implementation decisions.
+    ```
+
+    Valid keywords: `FIX`, `CLOSE`, `NEW`, `PERF`, `QUAL` (uppercase to appear in the changelog).
+  </Step>
+
+  <Step title="Sign your commits (DCO)">
+    Dolibarr requires a Developer Certificate of Origin sign-off on every commit. Use the `-s` flag:
+
+    ```bash
+    git commit -s -m "FIX #1234 Correct invoice total calculation"
+    ```
+
+    This appends `Signed-off-by: Your Name <your@email.com>` to the commit message, certifying that you have the right to submit the code under the project's GPL-3.0 license.
+
+    <Note>
+      The DCO is a lightweight alternative to a CLA. By signing off, you certify the statements in the [Developer Certificate of Origin](https://github.com/Dolibarr/dolibarr/blob/develop/DCO). PRs without sign-offs will fail CI checks.
+    </Note>
+  </Step>
+
+  <Step title="Run existing tests">
+    The test suite lives in the `test/` directory and uses PHPUnit. Run it against your local database:
+
+    ```bash
+    cd test
+    php vendor/bin/phpunit --configuration phpunit.xml
+    ```
+
+    Your PR must pass all CI checks (linting, PHPUnit, and code quality scans) before it will be reviewed. A PR with failing CI will not be merged and may be closed after an extended period of inactivity.
+  </Step>
+
+  <Step title="Push and open the pull request">
+    ```bash
+    git push -u origin feature/my-feature
+    ```
+
+    Open the PR against `Dolibarr/dolibarr:develop` on GitHub. Fill in the PR template completely:
+    - Reference the related issue (`Closes #1234` or `Fixes #1234`)
+    - Attach a screenshot for any UI change
+    - Confirm that CI passes
+    - Mark the PR as **Draft** if it is not ready for review
+
+    Keep the PR atomic: one bug fix or one feature per PR. If your PR can be split, it probably should be.
+  </Step>
+</Steps>
+
+## Coding standards
+
+<AccordionGroup>
+  <Accordion title="PHP style">
+    Dolibarr follows PSR-2 style. Key rules:
+    - 4-space indentation (no tabs)
+    - Opening braces on the same line for control structures, new line for class and function declarations
+    - All class properties and method visibility declared explicitly (`public`, `protected`, `private`)
+    - PHPDoc blocks on every public and protected method
+  </Accordion>
+
+  <Accordion title="SQL and database">
+    - All table names use the `llx_` prefix
+    - Column names are lowercase with underscores
+    - Never use `SELECT *` — always list column names explicitly
+    - Use `$db->escape()` for all values interpolated into SQL strings
+    - Use `$db->sanitize()` for SQL identifiers (table/column names from user input)
+  </Accordion>
+
+  <Accordion title="No framework dependencies">
+    Dolibarr's core does not depend on Composer packages beyond a few bundled libraries (Restler, PHPMailer, etc.). Do not add Composer dependencies to core code. Custom modules may use Composer in their own vendor directories if they manage their own autoloading.
+  </Accordion>
+
+  <Accordion title="Translation strings">
+    - Add all new user-facing strings as entries in `htdocs/langs/en_US/` files
+    - Do not modify non-English lang files in the repository — translations are managed exclusively via Transifex
+    - Lang file entries are plain `KEY=Value` pairs, one per line, with no trailing whitespace
+  </Accordion>
+</AccordionGroup>
+
+## Translations
+
+Dolibarr's source language (`en_US`) lives in the repository under `htdocs/langs/en_US/`. All other languages are managed on [Transifex](https://www.transifex.com/dolibarr-association/dolibarr/). The Transifex configuration is in `.tx/` at the repository root.
+
+To contribute a translation:
+
+1. Create an account at [transifex.com](https://www.transifex.com).
+2. Join the [Dolibarr translation project](https://www.transifex.com/dolibarr-association/dolibarr/).
+3. Select your language and translate strings directly in the Transifex editor.
+
+Translations submitted on Transifex are pulled into the repository and shipped with the next major release. If the English source string changes, Transifex marks the translation as needing review; use the History tab to restore a prior translation when the meaning has not changed.
+
+<Warning>
+  Do **not** submit pull requests that modify non-English `.lang` files. Those files are overwritten during the Transifex sync and your changes would be lost. Translations must go through Transifex.
+</Warning>
+
+## Security issues
+
+Do **not** report security vulnerabilities via GitHub Issues. Follow the responsible disclosure process described in [`SECURITY.md`](https://github.com/Dolibarr/dolibarr/blob/develop/SECURITY.md) in the repository root. This typically involves contacting the security team privately so a fix can be prepared before public disclosure.
+
+## Community resources
+
+| Resource | URL |
+|---------|-----|
+| Community forums (multi-language) | dolibarr.org/forum.php |
+| Developer wiki | wiki.dolibarr.org/index.php/Developer_documentation |
+| Translator documentation | wiki.dolibarr.org/index.php/Translator_documentation |
+| Module developer list of IDs | wiki.dolibarr.org/index.php/List_of_modules_id |
+| GitHub repository | github.com/Dolibarr/dolibarr |
+| Transifex translations | transifex.com/dolibarr-association/dolibarr |

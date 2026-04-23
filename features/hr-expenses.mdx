@@ -1,0 +1,178 @@
+---
+title: "Human resources and expense management"
+description: "Manage employee records, track leave requests, process expense reports, run recruitment campaigns, and record salaries in Dolibarr's HR modules."
+---
+
+Dolibarr's HR capability is composed of several independent modules that you can enable selectively. You might run just leave management and expense reports without activating recruitment or salaries — each module stands on its own while sharing the same employee records.
+
+<Note>
+Each HR feature is a separate module. Enable only the ones you need at **Setup → Modules**: Holiday (leave), ExpenseReport, HRM (employee records), Recruitment, and Salaries.
+</Note>
+
+## Employee records (HRM module)
+
+The HRM module provides a dedicated employee profile that extends the standard Dolibarr user account.
+
+<Steps>
+  <Step title="Enable the HRM module">
+    Go to **Setup → Modules → HRM** and activate it.
+  </Step>
+  <Step title="Create an employee profile">
+    Navigate to **HRM → Employees → New employee**. You can create a new user account at the same time or link the employee to an existing Dolibarr user.
+  </Step>
+  <Step title="Fill in the profile">
+    Complete the employee's job title, department, contract type (permanent, fixed-term, etc.), start date, and reporting manager. Upload a profile photo if desired.
+  </Step>
+  <Step title="Define skills and positions">
+    Use the **Skills** tab to record the employee's competencies and proficiency levels. The **Positions** tab tracks their current and past organisational positions, building an internal career history.
+  </Step>
+  <Step title="Link to HR documents">
+    The **Documents** tab on each employee record stores contracts, ID copies, and any other HR documents using Dolibarr's Electronic Document Management.
+  </Step>
+</Steps>
+
+### Departments and establishments
+
+- Create departments at **HRM → Setup → Departments**.
+- If your organisation has multiple physical sites, create **Establishments** to group employees by location.
+- Filter the employee list by department or establishment to produce site-specific headcount reports.
+
+## Leave management (Holiday module)
+
+The Holiday module provides a self-service leave request workflow with manager approval.
+
+### Setting up leave types
+
+Go to **Setup → Dictionaries → Leave types** to define the types of leave available (annual leave, sick leave, parental leave, etc.). For each type, configure:
+
+- Whether it requires manager approval
+- Whether unused days carry forward to the next year
+- The default annual allowance (days credited automatically)
+
+### Employee leave workflow
+
+<Steps>
+  <Step title="Employee submits a request">
+    The employee goes to **HRM → Leave requests → New request**, selects the leave type, start date, end date, and adds an optional comment. The request is sent to the configured approver.
+  </Step>
+  <Step title="Manager reviews the request">
+    The approver receives an email notification and can view the request at **HRM → Leave requests**. They see the team calendar to check for conflicts before deciding.
+  </Step>
+  <Step title="Approve or refuse">
+    Click **Approve** or **Refuse** with an optional reason. The employee is notified by email of the decision.
+  </Step>
+  <Step title="Leave balance updated">
+    Approved leave deducts from the employee's balance for that leave type. Balances are visible on the employee's profile and on their personal dashboard.
+  </Step>
+</Steps>
+
+<Tip>
+The shared team calendar in the Agenda module shows approved leave alongside other events, giving managers a full view of who is out on any given day.
+</Tip>
+
+## Expense reports
+
+Enable the **ExpenseReport** module to allow employees to submit expenses for reimbursement.
+
+### Expense report workflow
+
+<Steps>
+  <Step title="Create an expense report">
+    The employee goes to **HRM → Expense reports → New expense report**. Set the period covered and a description (e.g. "Client visit — London, March 2026").
+  </Step>
+  <Step title="Add expense lines">
+    Each line includes a date, expense type (meals, accommodation, transport, etc.), amount, VAT rate, and an optional receipt attachment. Multiple currencies are supported.
+  </Step>
+  <Step title="Submit for approval">
+    Click **Submit**. The assigned approver receives a notification.
+  </Step>
+  <Step title="Manager approves">
+    The approver reviews each line, can reject individual lines with a comment, and then approves the report. Approved reports move to **Validated** status.
+  </Step>
+  <Step title="Record payment">
+    The finance team clicks **Record payment** on the validated expense report, selecting the payment method and bank account used to reimburse the employee.
+  </Step>
+</Steps>
+
+<Warning>
+Expense reports in **Draft** state are not visible to approvers. Employees must explicitly click **Submit** to trigger the approval workflow.
+</Warning>
+
+### Mileage reimbursement (IK)
+
+Configure kilometre rates for vehicle types at **Setup → Expense reports → Mileage rates**:
+
+- Define rates per km for car, motorcycle, and bicycle categories.
+- Rates can vary by annual mileage band (common in French fiscal rules).
+- When an employee adds an expense line of type **Mileage**, they enter the number of kilometres; Dolibarr calculates the reimbursable amount automatically.
+
+## Recruitment
+
+Enable the **Recruitment** module to manage job openings and candidate pipelines.
+
+<CardGroup cols={2}>
+  <Card title="Job positions" icon="briefcase">
+    Create open positions with a title, department, contract type, salary range, and description. Publish positions to make them visible on your Dolibarr public job board.
+  </Card>
+  <Card title="Candidate applications" icon="users">
+    Record applications manually or let candidates apply via the public form. Each application is linked to a position and tracked through the hiring pipeline.
+  </Card>
+</CardGroup>
+
+### Hiring pipeline stages
+
+Navigate each candidate through configurable stages:
+
+```text
+Application received → Phone screen → Interview → Offer → Hired / Rejected
+```
+
+- Change the stage from the candidate card using the status buttons.
+- Add notes and attach documents (CV, cover letter) to each application.
+- Schedule interviews by linking an event from the Agenda module to the candidate record.
+
+## Salaries
+
+Enable the **Salaries** module to record salary payments — note that Dolibarr does not calculate payroll (gross to net); it records the net payments made to employees.
+
+<Steps>
+  <Step title="Set up salary payment types">
+    Go to **Setup → Dictionaries → Salary types** to define payment categories (base salary, bonus, overtime, etc.).
+  </Step>
+  <Step title="Record a salary payment">
+    Go to **HRM → Salaries → New salary**. Select the employee, the payment period, the net amount, and the bank account the transfer was made from.
+  </Step>
+  <Step title="Link to accounting">
+    Each salary record generates a bank journal entry, reducing the bank account balance and recording the salary expense against the configured accounting account.
+  </Step>
+</Steps>
+
+<Note>
+For full payroll calculation (social contributions, income tax withholding, payslip generation), you will need a dedicated payroll add-on from the DoliStore or an external payroll application integrated via the Dolibarr API.
+</Note>
+
+## Timesheets
+
+Enable the **Timesheets** module to capture time worked by employees against projects and tasks.
+
+- Employees open **HRM → Timesheets** and select the week to fill in.
+- Each row represents a project/task combination; columns represent days of the week.
+- Enter hours in each cell. Save the timesheet at any time and submit it for approval when complete.
+- Approved timesheet hours roll up to the project's **Time spent** totals, giving project managers accurate progress data.
+
+<Tip>
+Timesheets and the Projects module share the same time-entry backend. Hours entered in either place appear in both the timesheet view and the task's time log.
+</Tip>
+
+## Module enabling reference
+
+| Feature | Module name in Setup |
+|---|---|
+| Employee records | HRM |
+| Leave management | Holiday |
+| Expense reports | ExpenseReport |
+| Mileage reimbursement | ExpenseReport (included) |
+| Recruitment | Recruitment |
+| Salary recording | Salaries |
+| Timesheets | Timesheets |
+| Skills and evaluations | HRM (included) |

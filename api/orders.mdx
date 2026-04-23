@@ -1,0 +1,335 @@
+---
+title: "REST API endpoints for customer orders"
+description: "GET, POST, PUT, DELETE /orders — manage customer sales orders, add product lines, validate, and create shipments via the Dolibarr REST API."
+---
+
+Customer orders in Dolibarr capture confirmed commitments from your customers, forming the basis for stock reservation, warehouse picking, and delivery scheduling. An order progresses from **draft** (`statut = 0`) through **validated** (`statut = 1`) to **shipped** (`statut = 2`), and can be **cancelled** (`statut = 3`) at any point before fulfilment. Validating an order triggers stock reservation and makes the order available for shipment creation.
+
+**Base path:** `/api/index.php/orders`
+
+All requests require a valid API token passed in the `DOLAPIKEY` header.
+
+---
+
+## List orders
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction. `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Maximum number of records to return.
+</ParamField>
+
+<ParamField query="page" type="number" default="0">
+  Page number for pagination (zero-indexed).
+</ParamField>
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of third party IDs to filter orders by. Example: `1` or `1,2,3`.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL-style filter expression. Example: `(t.ref:like:'SO-%')`.
+</ParamField>
+
+<ParamField query="sqlfilterlines" type="string">
+  SQL-style filter applied to order lines. Example: `(tl.fk_product:=:'17')`.
+</ParamField>
+
+<ParamField query="properties" type="string">
+  Comma-separated list of properties to include. Returns all properties if omitted.
+</ParamField>
+
+<ParamField query="pagination_data" type="boolean" default="false">
+  When `true`, wraps the response in a `data` key and adds a `pagination` object.
+</ParamField>
+
+---
+
+## Create an order
+
+Both `socid` and `date` are mandatory.
+
+<ParamField body="socid" type="number" required>
+  ID of the third party (customer) placing the order.
+</ParamField>
+
+<ParamField body="date" type="number" required>
+  Order date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="date_livraison" type="number">
+  Expected delivery date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="ref_client" type="string">
+  Customer's own purchase order reference.
+</ParamField>
+
+<ParamField body="lines" type="object[]">
+  Array of order line objects.
+
+  <Expandable title="line properties">
+    <ParamField body="fk_product" type="number">
+      ID of the product or service.
+    </ParamField>
+    <ParamField body="product_label" type="string">
+      Line description (used for free-text lines).
+    </ParamField>
+    <ParamField body="qty" type="number" required>
+      Quantity ordered.
+    </ParamField>
+    <ParamField body="subprice" type="number" required>
+      Unit price excluding tax.
+    </ParamField>
+    <ParamField body="tva_tx" type="number">
+      VAT rate as a percentage.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```bash Create a sales order
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/orders' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "socid": 42,
+    "date": 1745280000,
+    "ref_client": "PO-2024-0099",
+    "lines": [
+      {
+        "fk_product": 7,
+        "qty": 10,
+        "subprice": 45.00,
+        "tva_tx": 20
+      }
+    ]
+  }'
+```
+
+**Response:** Returns the numeric ID of the created order.
+
+---
+
+## Get an order
+
+```
+GET /orders/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the order to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="number">
+  Unique identifier.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Order reference (e.g. `SO2024-0001`). Assigned on validation.
+</ResponseField>
+
+<ResponseField name="socid" type="number">
+  ID of the customer third party.
+</ResponseField>
+
+<ResponseField name="date_commande" type="number">
+  Order date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Order total excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Order total including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="number">
+  Order status. `0` = draft, `1` = validated, `2` = shipped, `3` = cancelled.
+</ResponseField>
+
+<ResponseField name="lines" type="object[]">
+  Array of order lines.
+
+  <Expandable title="line properties">
+    <ResponseField name="fk_product" type="number">
+      ID of the linked product.
+    </ResponseField>
+    <ResponseField name="product_ref" type="string">
+      Product reference code.
+    </ResponseField>
+    <ResponseField name="product_label" type="string">
+      Line description.
+    </ResponseField>
+    <ResponseField name="qty" type="number">
+      Quantity ordered.
+    </ResponseField>
+    <ResponseField name="subprice" type="number">
+      Unit price excluding tax.
+    </ResponseField>
+    <ResponseField name="tva_tx" type="number">
+      VAT rate as a percentage.
+    </ResponseField>
+    <ResponseField name="total_ht" type="number">
+      Line total excluding tax.
+    </ResponseField>
+    <ResponseField name="total_ttc" type="number">
+      Line total including tax.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Update an order
+
+```
+PUT /orders/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the draft order to update.
+</ParamField>
+
+Send only the fields you want to change. The same fields accepted by the create endpoint are accepted here.
+
+---
+
+## Delete an order
+
+```
+DELETE /orders/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the draft order to delete.
+</ParamField>
+
+---
+
+## Validate an order
+
+```
+POST /orders/{id}/validate
+```text
+
+Validates a draft order, triggering stock reservation and assigning the final order reference.
+
+<ParamField path="id" type="number" required>
+  ID of the draft order to validate.
+</ParamField>
+
+<ParamField body="idwarehouse" type="number">
+  Warehouse ID for stock reservation.
+</ParamField>
+
+```bash
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/orders/23/validate' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "idwarehouse": 1
+  }'
+```
+
+---
+
+## Add a line to an order
+
+```text
+POST /orders/{id}/lines
+```
+
+Adds a new line to a draft order.
+
+<ParamField path="id" type="number" required>
+  ID of the draft order.
+</ParamField>
+
+<ParamField body="fk_product" type="number">
+  Product or service ID.
+</ParamField>
+
+<ParamField body="product_label" type="string">
+  Line description (for free-text lines).
+</ParamField>
+
+<ParamField body="qty" type="number" required>
+  Quantity.
+</ParamField>
+
+<ParamField body="subprice" type="number" required>
+  Unit price excluding tax.
+</ParamField>
+
+<ParamField body="tva_tx" type="number">
+  VAT rate as a percentage.
+</ParamField>
+
+---
+
+## Update a line
+
+```text
+PUT /orders/{id}/lines/{lineid}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the order.
+</ParamField>
+
+<ParamField path="lineid" type="number" required>
+  ID of the line to update.
+</ParamField>
+
+---
+
+## Delete a line
+
+```text
+DELETE /orders/{id}/lines/{lineid}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the order.
+</ParamField>
+
+<ParamField path="lineid" type="number" required>
+  ID of the line to remove.
+</ParamField>
+
+---
+
+## Close an order
+
+```text
+POST /orders/{id}/close
+```
+
+Marks a validated order as closed or delivered.
+
+<ParamField path="id" type="number" required>
+  ID of the order to close.
+</ParamField>
+
+---
+
+## List shipments for an order
+
+```text
+GET /orders/{id}/shipments
+```
+
+Returns all shipments (expeditions) created against the specified order.
+
+<ParamField path="id" type="number" required>
+  ID of the order.
+</ParamField>

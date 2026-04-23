@@ -1,0 +1,235 @@
+---
+title: "REST API endpoints for contacts"
+description: "GET, POST, PUT, DELETE /contacts — manage individual contact persons linked to third parties. Key fields: firstname, lastname, socid, email, phone."
+---
+
+Contacts in Dolibarr represent individual people — employees, buyers, or any named person — associated with a third party such as a company or a sole trader. While a third party record holds the organisation-level details, contacts carry personal information like a job title, direct phone number, and email address. A single third party can have multiple contacts, and each contact is always linked back to exactly one third party via the `socid` field.
+
+**Base path:** `/api/index.php/contacts`
+
+All requests require a valid API token passed in the `DOLAPIKEY` header.
+
+---
+
+## List contacts
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by (e.g. `t.lastname`, `t.datec`).
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction. `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Maximum number of records to return.
+</ParamField>
+
+<ParamField query="page" type="number" default="0">
+  Page number for pagination (zero-indexed).
+</ParamField>
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of third party IDs to filter contacts by. Example: `1` or `1,2,3`.
+</ParamField>
+
+<ParamField query="category" type="number">
+  Filter by category ID.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL-style filter expression. Example: `(t.lastname:like:'Smith%')`.
+</ParamField>
+
+<ParamField query="includecount" type="number" default="0">
+  When set to `1`, each contact object includes counts of elements it is linked to.
+</ParamField>
+
+<ParamField query="includeroles" type="number" default="0">
+  When set to `1`, each contact object includes its associated roles.
+</ParamField>
+
+<ParamField query="properties" type="string">
+  Comma-separated list of properties to include in the response. Returns all properties if omitted.
+</ParamField>
+
+<ParamField query="pagination_data" type="boolean" default="false">
+  When `true`, wraps the response in a `data` key and adds a `pagination` object.
+</ParamField>
+
+```bash List contacts for a third party
+curl --request GET \
+  --url 'https://your-dolibarr.example.com/api/index.php/contacts?thirdparty_ids=42&limit=25' \
+  --header 'DOLAPIKEY: your_api_key'
+```
+
+---
+
+## Create a contact
+
+The only mandatory field is `lastname`.
+
+<ParamField body="lastname" type="string" required>
+  Last name of the contact.
+</ParamField>
+
+<ParamField body="firstname" type="string">
+  First name of the contact.
+</ParamField>
+
+<ParamField body="socid" type="number">
+  ID of the linked third party. Required to associate the contact with a company or individual.
+</ParamField>
+
+<ParamField body="email" type="string">
+  Direct email address of the contact.
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Direct phone number.
+</ParamField>
+
+<ParamField body="address" type="string">
+  Street address (if different from the third party address).
+</ParamField>
+
+<ParamField body="zip" type="string">
+  Postal / ZIP code.
+</ParamField>
+
+<ParamField body="town" type="string">
+  City or town.
+</ParamField>
+
+<ParamField body="country_id" type="number">
+  Numeric country ID. Use `GET /api/index.php/dictionaries/countries` to list available values.
+</ParamField>
+
+<ParamField body="poste" type="string">
+  Job title of the contact.
+</ParamField>
+
+<ParamField body="statut" type="number" default="1">
+  Contact status. `1` = active, `0` = inactive.
+</ParamField>
+
+```bash Create a contact
+curl --request POST \
+  --url 'https://your-dolibarr.example.com/api/index.php/contacts' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "lastname": "Smith",
+    "firstname": "Jane",
+    "socid": 42,
+    "poste": "Purchasing Manager",
+    "email": "j.smith@acme.example.com",
+    "phone": "+1 555 000 1234"
+  }'
+```
+
+**Response:** Returns the numeric ID of the created contact.
+
+---
+
+## Get a contact
+
+```text
+GET /contacts/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the contact to retrieve.
+</ParamField>
+
+<ParamField query="includecount" type="number" default="0">
+  When set to `1`, the response includes counts of elements the contact is linked to.
+</ParamField>
+
+<ParamField query="includeroles" type="number" default="0">
+  When set to `1`, the response includes the contact's roles.
+</ParamField>
+
+<ResponseField name="id" type="number">
+  Unique identifier.
+</ResponseField>
+
+<ResponseField name="firstname" type="string">
+  First name.
+</ResponseField>
+
+<ResponseField name="lastname" type="string">
+  Last name.
+</ResponseField>
+
+<ResponseField name="socid" type="number">
+  ID of the linked third party.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Email address.
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  Phone number.
+</ResponseField>
+
+<ResponseField name="address" type="string">
+  Street address.
+</ResponseField>
+
+<ResponseField name="zip" type="string">
+  Postal / ZIP code.
+</ResponseField>
+
+<ResponseField name="town" type="string">
+  City or town.
+</ResponseField>
+
+<ResponseField name="country_id" type="number">
+  Numeric country ID.
+</ResponseField>
+
+<ResponseField name="poste" type="string">
+  Job title.
+</ResponseField>
+
+<ResponseField name="statut" type="number">
+  Contact status. `1` = active, `0` = inactive.
+</ResponseField>
+
+---
+
+## Update a contact
+
+```text
+PUT /contacts/{id}
+```
+
+<ParamField path="id" type="number" required>
+  ID of the contact to update.
+</ParamField>
+
+Send only the fields you want to change in the request body. The same fields accepted by the create endpoint are accepted here.
+
+```bash Update a contact's job title
+curl --request PUT \
+  --url 'https://your-dolibarr.example.com/api/index.php/contacts/18' \
+  --header 'DOLAPIKEY: your_api_key' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "poste": "Head of Procurement"
+  }'
+```
+
+---
+
+## Delete a contact
+
+```
+DELETE /contacts/{id}
+```text
+
+<ParamField path="id" type="number" required>
+  ID of the contact to delete.
+</ParamField>

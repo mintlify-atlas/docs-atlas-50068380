@@ -1,0 +1,72 @@
+---
+title: "Dolibarr ERP & CRM: open-source business management"
+description: "Dolibarr is a modular open-source ERP and CRM for companies of any size. Learn what it does, who it's for, and how it's organized."
+---
+
+## What is Dolibarr?
+
+Dolibarr ERP & CRM is an open-source business management suite written in PHP with JavaScript enhancements. It lets you manage contacts, quotes, invoices, orders, stock, projects, HR, and more — all from a single web application you host yourself.
+
+It is released under the **GNU General Public License v3+** (GPL-3+), which means you can freely use, study, modify, and distribute it. The source is available at [github.com/Dolibarr/dolibarr](https://github.com/Dolibarr/dolibarr).
+
+The current stable release series is **v20**. The development branch targets **v24**.
+
+## Who is it for?
+
+Dolibarr is designed for:
+
+- **Small and medium-sized enterprises (SMEs)** that need an affordable, self-hosted alternative to commercial ERP systems
+- **Foundations and non-profits** that require membership and donation tracking alongside standard business features
+- **Freelancers** who want a lightweight tool for quotes, invoices, and client management without paying per-seat fees
+
+You can run it as a standalone local application or deploy it on a server and access it from anywhere over the internet.
+
+## The modular philosophy
+
+Dolibarr ships with **100+ built-in modules**, none of which are mandatory. You activate only the modules your organisation actually needs. This keeps the interface clean and avoids paying for features you will never use.
+
+Modules are grouped into functional areas and toggled on or off from **Home → Setup → Modules/Applications**. When you enable a module, its menu entries, permissions, and database tables appear automatically. Disabling a module hides everything related to it without deleting data.
+
+The [DoliStore marketplace](https://www.dolistore.com) provides more than 1,000 additional commercial and community add-ons for specialised workflows.
+
+## Key capability areas
+
+| Area | What it covers |
+|---|---|
+| **CRM** | Contacts, prospects, leads, opportunities, commercial proposals with online signing |
+| **Sales** | Customer orders, contracts, subscriptions, shipping, interventions |
+| **Billing** | Customer invoices, credit notes, payment tracking, point of sale (TakePos) |
+| **Purchasing** | Supplier catalogue, purchase orders, supplier invoices, reception |
+| **Inventory** | Products and services, stock and warehouses, lot/serial tracking, BOM, MRP |
+| **Accounting** | Double-entry accounting, bank reconciliation, SEPA direct debit, margins, reports |
+| **HR** | Employee records, leave management, expense reports, recruitment, timesheets, salaries |
+| **Projects** | Projects and tasks, resource management, event organisation |
+| **API** | REST and SOAP APIs for integration with external systems |
+
+## System requirements
+
+| Component | Minimum |
+|---|---|
+| **PHP** | 7.2 or later (check [release notes](https://wiki.dolibarr.org/index.php/Releases) for the exact range per version) |
+| **Database** | MariaDB, MySQL, or PostgreSQL |
+| **Web server** | Apache or Nginx (any server that supports PHP) |
+| **Browser** | Any modern browser |
+
+Dolibarr is compatible with any cloud provider that meets the PHP and database prerequisites.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Install Dolibarr" icon="server" href="/installation">
+    Set up Dolibarr on your own server using manual setup, Docker, or a package installer.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Go from a fresh install to your first invoice in 15 minutes.
+  </Card>
+  <Card title="Modules overview" icon="puzzle" href="/modules-overview">
+    Browse the 100+ built-in modules and learn how to activate them.
+  </Card>
+  <Card title="API reference" icon="code" href="/api/overview">
+    Integrate Dolibarr with external systems using the REST API.
+  </Card>
+</Columns>

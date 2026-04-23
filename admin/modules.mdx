@@ -1,0 +1,226 @@
+---
+title: "Enable and configure Dolibarr modules"
+description: "Activate, deactivate, and configure Dolibarr's 100+ built-in modules from the Setup panel. Learn which modules to enable for common business scenarios."
+---
+
+Dolibarr is built entirely around optional modules. A freshly installed instance has almost no functionality visible to regular users — you enable exactly the features your business needs and nothing more. This keeps the interface uncluttered and reduces the attack surface of your installation. With over 100 built-in modules and more available from DoliStore, you can assemble a system that fits a small freelance operation or a multi-site manufacturing company.
+
+---
+
+## Where to manage modules
+
+**Path:** Home → Setup → Modules/Applications (`/admin/modules.php`)
+
+The module list is the single page where you enable, disable, and access the configuration of every installed module. You must be an administrator to make changes here.
+
+### Module states
+
+| State | Appearance | Meaning |
+|---|---|---|
+| **Disabled** | Grayed out toggle | The module is installed but inactive. Its menus, objects, and permissions are hidden from all users. |
+| **Enabled** | Colored / lit toggle | The module is active. Its menus appear, its objects can be created, and its permissions can be assigned to users. |
+| **Configured** | Wrench/gear icon visible | The module has been enabled and has additional settings that have been completed. Click the wrench icon to re-open the configuration page. |
+
+### Enabling a module
+
+1. Find the module in the list (use the category tabs or browser search).
+2. Click the **toggle** to enable it. The page reloads confirming the change.
+3. If a **wrench icon** appears next to the module name, click it to open the module's configuration page and complete the required settings before using the module.
+
+### Disabling a module
+
+Click the toggle again. Data created by the module is **not deleted** — it remains in the database. Re-enabling the module later restores access to all existing records.
+
+<Warning>
+Disabling a module that other modules depend on will break those dependent modules. Dolibarr will warn you in most cases, but always check module dependencies before disabling in a production environment.
+</Warning>
+
+---
+
+## Module categories
+
+<AccordionGroup>
+  <Accordion title="CRM">
+    Modules for managing customer relationships and sales pipeline.
+
+    - **Third Parties** — customers, prospects, and suppliers (required by most other modules)
+    - **Contacts/Addresses** — contact persons linked to third parties
+    - **Prospects/Leads** — opportunity pipeline and conversion tracking
+    - **Agenda/Calendar** — events, tasks, and reminders
+  </Accordion>
+  <Accordion title="Sales">
+    Modules for the full sales cycle from quote to cash.
+
+    - **Proposals/Quotes** — create and send commercial proposals
+    - **Customer Orders** — confirm and track sales orders
+    - **Invoices** — issue customer invoices, credit notes, and situation invoices
+    - **Contracts** — recurring services and subscription contracts
+    - **Interventions** — on-site service interventions linked to contracts
+  </Accordion>
+  <Accordion title="Purchasing">
+    Modules for procurement and supplier management.
+
+    - **Suppliers** (Fournisseur) — supplier records; required by Supplier Orders
+    - **Supplier Orders** — purchase orders sent to suppliers
+    - **Supplier Invoices** — record and match supplier invoices
+    - **Reception** — goods receipt tracking linked to supplier orders
+  </Accordion>
+  <Accordion title="Finance and accounting">
+    Modules for financial management, banking, and accounting.
+
+    - **Bank/Cash accounts** — bank account records and statement import
+    - **Accounting** (Double-entry) — chart of accounts, journal entries, VAT declarations
+    - **Expense reports** — employee expense claims and reimbursement
+    - **Donations/Loans** — non-profit and loan tracking
+    - **MultiCurrency** — foreign currency invoicing and exchange rates
+  </Accordion>
+  <Accordion title="Inventory">
+    Modules for product and stock management.
+
+    - **Products/Services** — product catalogue (required by Sales and Purchasing)
+    - **Stock/Warehouse** — stock levels, warehouses, and stock movements
+    - **Batches/Lots/Serials** — lot and serial number traceability
+    - **Barcodes** — barcode generation and scanning
+  </Accordion>
+  <Accordion title="HR">
+    Modules for human resources management.
+
+    - **HR** — employee records, position, and contract data
+    - **Leave/Holiday management** — employee leave requests and approval workflow
+    - **Expense reports** — employee expense claims (also listed under Finance)
+    - **Recruitment** — job positions and candidate tracking
+  </Accordion>
+  <Accordion title="Collaboration">
+    Modules for internal teamwork and project management.
+
+    - **Projects** — project records, tasks, and time tracking
+    - **Tickets** — internal and external helpdesk ticketing
+    - **ECM/Document management** — file attachment storage and category organization
+    - **Surveys/Polls** — simple surveys linked to agenda events
+  </Accordion>
+  <Accordion title="Integrations">
+    Modules that connect Dolibarr to external systems.
+
+    - **REST API** — enables the JSON REST API (required for all API integrations)
+    - **LDAP** — authenticate users against an LDAP / Active Directory server
+    - **Email collector** — automatically import emails from an IMAP mailbox
+    - **Stripe** — online payment links on invoices
+    - **OAuth** — OAuth2 login with external identity providers
+    - **DAV** — CalDAV/CardDAV sync for calendar and contacts
+  </Accordion>
+  <Accordion title="Other">
+    Utility and compliance modules.
+
+    - **DataPolicy (GDPR)** — data retention rules and personal data anonymization
+    - **BlockedLog** — tamper-proof audit trail for regulated industries
+    - **Barcode** — barcode printing support
+    - **TakePos** — point-of-sale terminal for retail
+    - **Website** — built-in CMS for a public-facing website
+    - **Knowledge management** — internal knowledge base / wiki articles
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Recommended starter sets
+
+Choose the set that most closely matches your business type, then add individual modules from the category reference above as needed.
+
+<CardGroup cols={3}>
+  <Card title="Small services business" icon="briefcase">
+    The minimal set for a consulting, agency, or freelance operation:
+
+    - Third Parties
+    - Contacts/Addresses
+    - Proposals/Quotes
+    - Customer Orders
+    - Invoices
+    - Products/Services
+    - Bank/Cash accounts
+    - Projects (optional)
+    - Agenda/Calendar (optional)
+  </Card>
+  <Card title="Retail / e-commerce" icon="shopping-cart">
+    For businesses selling physical goods in-store or online:
+
+    - Third Parties
+    - Products/Services
+    - Stock/Warehouse
+    - Barcodes
+    - Customer Orders
+    - Invoices
+    - TakePos (for in-store POS)
+    - Stripe (for online payment links)
+    - Bank/Cash accounts
+  </Card>
+  <Card title="Manufacturing" icon="factory">
+    For businesses that produce goods from components:
+
+    - Third Parties
+    - Products/Services
+    - Stock/Warehouse
+    - Bill of Materials (BOM)
+    - Manufacturing Orders (MRP)
+    - Customer Orders
+    - Supplier Orders
+    - Invoices
+    - Supplier Invoices
+  </Card>
+</CardGroup>
+
+<Tip>
+Enable the **REST API** module early if you plan to integrate Dolibarr with any external tool (e-commerce platform, accounting software, CRM). The API is disabled by default and must be explicitly enabled before any API calls will work.
+</Tip>
+
+---
+
+## Module dependencies
+
+Some modules require other modules to be enabled first. Dolibarr shows a warning when you try to enable a module whose dependency is missing, but it is worth planning your module list in advance.
+
+Common dependency chains:
+
+| Module to enable | Requires |
+|---|---|
+| Supplier Orders | Suppliers (Fournisseur) module |
+| Supplier Invoices | Suppliers (Fournisseur) module |
+| Reception | Supplier Orders module |
+| Manufacturing Orders (MRP) | Bill of Materials (BOM) + Products/Services + Stock |
+| Batches/Lots | Products/Services + Stock/Warehouse |
+| Expense reports | Bank/Cash accounts (for reimbursement) |
+| Accounting (double-entry) | Invoices and/or Supplier Invoices |
+
+---
+
+## Custom modules
+
+Dolibarr supports third-party and custom modules placed in the `htdocs/custom/` directory. The module manager scans this directory on every page load and lists any valid modules found there alongside the built-in ones.
+
+```text
+htdocs/
+└── custom/
+    └── mymodule/
+        ├── core/
+        │   └── modules/
+        │       └── modMyModule.class.php   ← module descriptor
+        └── ...
+```
+
+Custom modules in `htdocs/custom/` survive a Dolibarr core upgrade (provided you do not overwrite the `custom/` directory), making it the correct location for any customization.
+
+<Note>
+Always back up the `htdocs/custom/` directory before upgrading Dolibarr core files. The upgrade process overwrites `htdocs/` but leaves `custom/` untouched only if you overwrite selectively — a full directory overwrite will delete it.
+</Note>
+
+---
+
+## DoliStore marketplace
+
+DoliStore ([https://www.dolistore.com](https://www.dolistore.com)) is the official marketplace for third-party Dolibarr modules. Modules are available as zip archives that you install by:
+
+1. Downloading the zip from DoliStore.
+2. Extracting the module directory into `htdocs/custom/`.
+3. Refreshing the module list at **Home → Setup → Modules/Applications**.
+4. Enabling and configuring the module from the list.
+
+Some marketplace modules provide an in-app installer accessible from **Home → Setup → Modules/Applications → Deploy/install external module**.

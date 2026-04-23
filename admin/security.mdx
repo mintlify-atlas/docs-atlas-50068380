@@ -1,0 +1,202 @@
+---
+title: "Security configuration and best practices"
+description: "Secure your Dolibarr installation with HTTPS, strong passwords, file permissions, WAF settings, and GDPR data privacy controls."
+---
+
+Security in Dolibarr is a shared responsibility between the application and the server environment it runs on. The application provides password policies, login controls, an audit log, and request filtering — but it depends on you to configure HTTPS, set correct file permissions, and keep your PHP environment patched. Work through this page after your initial installation and revisit it before each major upgrade.
+
+---
+
+## HTTPS
+
+<Warning>
+Always serve Dolibarr over HTTPS. The REST API transmits API tokens in HTTP headers or query parameters — sending them over plain HTTP exposes them to interception on any network path between the client and server. Password authentication is equally exposed without TLS.
+</Warning>
+
+Obtain a TLS certificate (Let's Encrypt provides free certificates) and configure your web server (Apache or Nginx) to redirect all HTTP traffic to HTTPS.
+
+After enabling HTTPS, set the following constant in `htdocs/conf/conf.php` to enforce secure connections at the application level:
+
+```php
+$dolibarr_main_force_https = 1;
+```
+
+This causes Dolibarr to redirect any HTTP request to HTTPS and sets the `Secure` flag on session cookies.
+
+---
+
+## File permissions
+
+<Warning>
+The `htdocs/conf/conf.php` file contains your database credentials in plain text. It must be owned by the web server user and set to mode `0400` (read-only for owner, no access for group or others) after the initial setup wizard completes. Any user who can read this file can access your entire database.
+</Warning>
+
+Recommended permission structure:
+
+| Path | Recommended mode | Notes |
+|---|---|---|
+| `htdocs/conf/conf.php` | `0400` (or `0440`) | Read-only after setup |
+| `htdocs/` (directory) | `0755`, files `0644` | Web server reads; no writes needed |
+| `documents/` | `0750`, files `0640` | Web server writes; outside webroot ideally |
+| `htdocs/custom/` | `0755`, files `0644` | Same as htdocs |
+
+<Note>
+The `documents/` directory stores all uploaded files, generated PDFs, and backups. For maximum security, place it **outside your web server document root** so that files cannot be accessed directly by URL. Configure the path in `conf.php` using `$dolibarr_main_data_root`.
+</Note>
+
+Prevent directory listing by ensuring your web server configuration includes `Options -Indexes` (Apache) or `autoindex off` (Nginx) for the Dolibarr directory tree.
+
+---
+
+## Built-in WAF (Web Application Firewall)
+
+Dolibarr includes a basic request filtering layer (`htdocs/core/lib/security2.lib.php`, enabled by default) that checks incoming request parameters for common attack patterns including SQL injection attempts and path traversal sequences.
+
+For production installations subject to public exposure, supplement this with:
+
+- A dedicated reverse-proxy WAF (e.g., ModSecurity with OWASP Core Rule Set in front of Apache/Nginx)
+- **Fail2ban** rules on the login page (`/index.php`), password-reset page, and all public pages (`/public/*`) to rate-limit brute-force attempts — Dolibarr's SECURITY.md recommends this explicitly
+
+The security scope defined in Dolibarr's own security policy requires Fail2ban to be installed and configured before brute-force attacks on login are considered within scope for vulnerability reports.
+
+---
+
+## Admin security settings
+
+**Path:** Home → Setup → Security (`/admin/security.php`)
+
+This page controls application-level security parameters.
+
+<Tabs>
+  <Tab title="Password policy">
+    | Setting | Description |
+    |---|---|
+    | Password generation rule | Choose complexity requirements: length, mixed case, digits, special characters |
+    | Minimum length | Enforced at user creation and password change |
+    | Password expiry | Force users to change passwords after N days (0 = never expires) |
+    | Prevent reuse | Optionally block reuse of recent passwords (requires additional module) |
+
+    Changes to the password policy apply to new passwords only — existing users are not immediately forced to change unless the expiry period triggers a prompt.
+  </Tab>
+  <Tab title="Login controls">
+    | Setting | Description |
+    |---|---|
+    | Max login attempts | Lock an account after N consecutive failed login attempts |
+    | Lockout duration | Duration of the automatic lockout (minutes) |
+    | CAPTCHA on login | Enable image CAPTCHA on the login form to deter automated attacks |
+
+    Configure CAPTCHA separately at **Home → Setup → Security → CAPTCHA** (`/admin/security_captcha.php`). Dolibarr supports reCAPTCHA and a built-in image CAPTCHA.
+  </Tab>
+  <Tab title="HTTP security headers">
+    **Path:** Home → Setup → Security → HTTP headers (`/admin/security_headers_http.php`)
+
+    Configure HTTP response headers for defense in depth:
+
+    | Header | Recommended value |
+    |---|---|
+    | `X-Frame-Options` | `SAMEORIGIN` |
+    | `X-Content-Type-Options` | `nosniff` |
+    | `Content-Security-Policy` | Start with `default-src 'self'` and expand as needed |
+    | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+    | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` (HTTPS only) |
+  </Tab>
+  <Tab title="Other security constants">
+    **Path:** Home → Setup → Other constants (`/admin/const.php`) or Home → Setup → Security Other (`/admin/security_other.php`)
+
+    For production installations, set these constants:
+
+    | Constant | Value | Effect |
+    |---|---|---|
+    | `MAIN_SECURITY_CSRF_WITH_TOKEN` | `3` | Maximum CSRF protection using tokens on all requests |
+    | `MAIN_RESTRICTHTML_ONLY_VALID_HTML` | `1` | Reject malformed HTML in rich text fields |
+    | `MAIN_RESTRICTHTML_REMOVE_ALSO_BAD_ATTRIBUTES` | `1` | Strip dangerous HTML attributes |
+    | `MAIN_DISALLOW_URL_INTO_DESCRIPTIONS` | `1` | Block external URLs in description fields |
+    | `dolibarr_main_prod` | `1` | Suppress detailed error messages in production (set in `conf.php`) |
+  </Tab>
+</Tabs>
+
+---
+
+## Data privacy (GDPR)
+
+**Path:** Home → Setup → Modules → DataPolicy (enable), then Home → Setup → GDPR/Data Privacy
+
+The **DataPolicy** module provides tools for complying with GDPR and similar data privacy regulations:
+
+- **Retention rules** — define how long personal data is kept for each record type (contacts, prospects, etc.) before it should be reviewed or deleted
+- **Anonymization** — anonymize a contact or third party record on request, replacing personal fields with pseudonymous values while preserving financial records for accounting compliance
+- **Consent tracking** — record and audit consent for marketing communications on contact records
+- **Data export** — export all personal data held for a specific individual in response to a subject access request
+
+<Note>
+The DataPolicy module assists with GDPR compliance but does not guarantee it. Consult your legal counsel to ensure your data retention policies and processing activities are documented correctly in your Records of Processing Activities (ROPA).
+</Note>
+
+---
+
+## API security
+
+API tokens function as long-lived credentials. Treat them with the same care as passwords.
+
+- **Always use HTTPS** — tokens in query parameters are logged by web servers in plain text if transmitted over HTTP
+- **Use dedicated service users** — create a user with only the permissions needed for the integration; never use an administrator's token in an external system
+- **Rotate tokens regularly** — generate a new token periodically and update the integration; revoke old tokens by regenerating
+- **Restrict by IP if possible** — if your integration runs from a fixed IP address, configure your firewall or web server to block API path requests from all other IPs
+
+See [Users, groups, and permissions](/admin/users-permissions) for instructions on creating a dedicated service user and generating an API token.
+
+---
+
+## Two-factor authentication
+
+Dolibarr does not include built-in TOTP two-factor authentication in the core product as of the current stable release. Options for adding 2FA:
+
+- **LDAP/Active Directory with MFA** — if you authenticate Dolibarr users against an LDAP server that enforces MFA, the 2FA check happens at the identity provider level before the Dolibarr session is granted
+- **SSO via OpenID Connect** — the **OpenID Connect** module (`/admin/openid_connect.php`) allows delegating authentication to an external identity provider (e.g., Keycloak, Okta, Azure AD) that can enforce MFA policies
+
+---
+
+## Audit log (BlockedLog)
+
+**Path:** Home → Setup → Modules → BlockedLog (enable)
+
+The **BlockedLog** module records a tamper-proof audit trail of key financial events (invoice creation, validation, cancellation, payment recording). Each log entry is chained using a hash, making it detectable if records are modified after the fact.
+
+This module is particularly useful for:
+- Businesses subject to financial audit requirements
+- Jurisdictions that require immutable accounting records (e.g., French NF525 anti-fraud requirement for cash registers)
+
+<Note>
+Enable BlockedLog before you start creating financial records — it cannot retroactively sign entries that were created before it was enabled.
+</Note>
+
+---
+
+## Backup and recovery before upgrades
+
+<Warning>
+Always take a complete backup immediately before upgrading Dolibarr. There is no automated rollback — restoring from backup is the only recovery option if an upgrade fails or causes data corruption.
+</Warning>
+
+Before any upgrade, back up:
+
+1. **Full database dump** — `mysqldump -u root -p dolibarr > dolibarr_backup_$(date +%Y%m%d).sql`
+2. **`htdocs/documents/`** — all uploaded files and generated PDFs
+3. **`htdocs/conf/conf.php`** — your database credentials and instance configuration
+4. **`htdocs/custom/`** — any installed third-party modules
+
+Store backups in a location separate from the server (object storage, off-site NAS, etc.).
+
+See [Upgrading Dolibarr](/admin/upgrading) for the full upgrade procedure.
+
+---
+
+## Reporting security issues
+
+If you discover a security vulnerability in Dolibarr:
+
+- **GitHub advisories (recommended):** [https://github.com/Dolibarr/dolibarr/security/advisories](https://github.com/Dolibarr/dolibarr/security/advisories)
+- **Email:** security@dolibarr.org — include a clear description and steps to reproduce
+- **Security RSS feed:** Subscribe to [https://cti.dolibarr.org/index-security.rss](https://cti.dolibarr.org/index-security.rss) to receive notifications of newly disclosed vulnerabilities
+
+Reports are processed approximately once a month. Dolibarr does not publish CVE numbers itself but you are free to request one independently. See [SECURITY.md](https://github.com/Dolibarr/dolibarr/blob/develop/SECURITY.md) in the repository for the full scope policy, including which vulnerability classes are accepted and which setups are considered in-scope.

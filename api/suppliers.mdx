@@ -1,0 +1,388 @@
+---
+title: "REST API endpoints for supplier purchases"
+description: "GET, POST, PUT, DELETE /supplier_orders and /supplier_invoices — manage purchase orders and supplier invoices via the Dolibarr REST API."
+---
+
+The supplier purchase API mirrors the customer sales API for the purchasing side of your business. Use it to create and track purchase orders sent to suppliers, receive goods, and record supplier invoices for payment.
+
+**Base paths:**
+- `/api/index.php/supplier_orders`
+- `/api/index.php/supplier_invoices`
+
+---
+
+## Supplier orders
+
+### List supplier orders
+
+`GET /supplier_orders`
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of supplier third-party IDs to filter by (e.g. `1` or `1,2,3`).
+</ParamField>
+
+<ParamField query="product_ids" type="string">
+  Comma-separated list of product IDs to filter by.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by order status: `draft`, `validated`, `approved`, `running`, `received_start`, `received_end`, `cancelled`, or `refused`.
+</ParamField>
+
+<ParamField query="sqlfilters" type="string">
+  Additional SQL filter criteria. Example: `(t.ref:like:'PO-%')`
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/supplier_orders?status=validated&thirdparty_ids=15" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+### Create a supplier order
+
+`POST /supplier_orders`
+
+<ParamField body="socid" type="integer" required>
+  ID of the supplier third party.
+</ParamField>
+
+<ParamField body="date_commande" type="integer">
+  Order date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="lines" type="array">
+  Array of order lines. Each line should include `fk_product`, `qty`, `subprice`, and `tva_tx`.
+</ParamField>
+
+<ParamField body="note_public" type="string">
+  Public note visible to the supplier.
+</ParamField>
+
+<ParamField body="note_private" type="string">
+  Internal note.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/supplier_orders" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "socid": 15,
+    "date_commande": 1704067200,
+    "lines": [
+      {
+        "fk_product": 8,
+        "qty": 100,
+        "subprice": 5.50,
+        "tva_tx": 20
+      }
+    ]
+  }'
+```
+
+<ResponseField name="id" type="integer">
+  ID of the newly created supplier order.
+</ResponseField>
+
+---
+
+### Get a supplier order
+
+`GET /supplier_orders/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Order ID.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Order reference.
+</ResponseField>
+
+<ResponseField name="socid" type="integer">
+  ID of the supplier third party.
+</ResponseField>
+
+<ResponseField name="date_commande" type="integer">
+  Order date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Total amount excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Total amount including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Order status: `0` draft, `1` validated, `4` received, `7` cancelled.
+</ResponseField>
+
+<ResponseField name="lines" type="array">
+  Array of order line objects.
+</ResponseField>
+
+---
+
+### Update a supplier order
+
+`PUT /supplier_orders/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order to update.
+</ParamField>
+
+Supply any order fields in the request body.
+
+---
+
+### Delete a supplier order
+
+`DELETE /supplier_orders/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order to delete.
+</ParamField>
+
+---
+
+### Validate a supplier order
+
+`POST /supplier_orders/{id}/validate`
+
+Transitions a draft order to validated status.
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order to validate.
+</ParamField>
+
+---
+
+### Add a line to a supplier order
+
+`POST /supplier_orders/{id}/lines`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order.
+</ParamField>
+
+<ParamField body="fk_product" type="integer">
+  ID of the product. Omit for a free-text line.
+</ParamField>
+
+<ParamField body="qty" type="number" required>
+  Quantity ordered.
+</ParamField>
+
+<ParamField body="subprice" type="number" required>
+  Unit price excluding tax.
+</ParamField>
+
+<ParamField body="tva_tx" type="number" required>
+  VAT rate as a percentage.
+</ParamField>
+
+---
+
+### Delete a line from a supplier order
+
+`DELETE /supplier_orders/{id}/lines/{lineid}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier order.
+</ParamField>
+
+<ParamField path="lineid" type="integer" required>
+  ID of the line to remove.
+</ParamField>
+
+---
+
+## Supplier invoices
+
+### List supplier invoices
+
+`GET /supplier_invoices`
+
+<ParamField query="thirdparty_ids" type="string">
+  Comma-separated list of supplier third-party IDs to filter by.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by invoice status: `draft`, `unpaid`, `paid`, or `cancelled`.
+</ParamField>
+
+<ParamField query="sortfield" type="string" default="t.rowid">
+  Field to sort results by.
+</ParamField>
+
+<ParamField query="sortorder" type="string" default="ASC">
+  Sort direction: `ASC` or `DESC`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="100">
+  Maximum number of results to return.
+</ParamField>
+
+<ParamField query="page" type="integer" default="0">
+  Page number (zero-indexed).
+</ParamField>
+
+```bash
+curl -X GET "https://your-dolibarr.example.com/api/index.php/supplier_invoices?status=unpaid" \
+  -H "DOLAPIKEY: your-api-key"
+```
+
+---
+
+### Create a supplier invoice
+
+`POST /supplier_invoices`
+
+<ParamField body="socid" type="integer" required>
+  ID of the supplier third party.
+</ParamField>
+
+<ParamField body="date" type="integer">
+  Invoice date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="lines" type="array">
+  Array of invoice lines, each with `fk_product`, `qty`, `subprice`, and `tva_tx`.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  ID of the newly created supplier invoice.
+</ResponseField>
+
+---
+
+### Get a supplier invoice
+
+`GET /supplier_invoices/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier invoice to retrieve.
+</ParamField>
+
+<ResponseField name="id" type="integer">
+  Invoice ID.
+</ResponseField>
+
+<ResponseField name="ref" type="string">
+  Invoice reference.
+</ResponseField>
+
+<ResponseField name="socid" type="integer">
+  ID of the supplier third party.
+</ResponseField>
+
+<ResponseField name="date" type="integer">
+  Invoice date as a Unix timestamp.
+</ResponseField>
+
+<ResponseField name="total_ht" type="number">
+  Total amount excluding tax.
+</ResponseField>
+
+<ResponseField name="total_ttc" type="number">
+  Total amount including tax.
+</ResponseField>
+
+<ResponseField name="statut" type="integer">
+  Invoice status: `0` draft, `1` validated (unpaid), `2` paid.
+</ResponseField>
+
+---
+
+### Update a supplier invoice
+
+`PUT /supplier_invoices/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier invoice to update.
+</ParamField>
+
+Supply any invoice fields in the request body.
+
+---
+
+### Delete a supplier invoice
+
+`DELETE /supplier_invoices/{id}`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier invoice to delete.
+</ParamField>
+
+---
+
+### Validate a supplier invoice
+
+`POST /supplier_invoices/{id}/validate`
+
+Transitions a draft invoice to validated (unpaid) status.
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier invoice to validate.
+</ParamField>
+
+---
+
+### Record a payment on a supplier invoice
+
+`POST /supplier_invoices/{id}/payments`
+
+<ParamField path="id" type="integer" required>
+  ID of the supplier invoice.
+</ParamField>
+
+<ParamField body="datepaye" type="integer" required>
+  Payment date as a Unix timestamp.
+</ParamField>
+
+<ParamField body="paiementid" type="integer" required>
+  Payment method ID (references the payment type dictionary).
+</ParamField>
+
+<ParamField body="closepaidinvoices" type="string">
+  Set to `yes` to automatically mark the invoice as paid when the payment covers the full amount.
+</ParamField>
+
+<ParamField body="accountid" type="integer">
+  ID of the bank account to record the payment against.
+</ParamField>
+
+```bash
+curl -X POST "https://your-dolibarr.example.com/api/index.php/supplier_invoices/23/payments" \
+  -H "DOLAPIKEY: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "datepaye": 1704153600,
+    "paiementid": 4,
+    "closepaidinvoices": "yes",
+    "accountid": 1
+  }'
+```

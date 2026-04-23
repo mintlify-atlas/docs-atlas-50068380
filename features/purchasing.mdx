@@ -1,0 +1,170 @@
+---
+title: "Purchasing and supplier management in Dolibarr"
+description: "Manage your complete purchasing workflow: supplier catalog, purchase orders, goods reception, and supplier invoice matching and payment."
+---
+
+Dolibarr's purchasing workflow mirrors the sales pipeline in reverse: a purchase order goes to a supplier, goods arrive at your warehouse, and a supplier invoice is matched to confirm the expense. Every step is linked, so you always know what has been ordered, what has arrived, and what remains unpaid.
+
+## Supplier records
+
+Suppliers are third-party records with the **Is supplier** flag enabled. You can set this when creating the record or at any time from an existing third-party profile.
+
+<Steps>
+  <Step title="Create a supplier record">
+    Go to **Third Parties → New third party**. Enter the company name, then tick **Supplier** under the type checkboxes. Fill in the address, country, and VAT number as needed.
+  </Step>
+  <Step title="Set supplier-specific pricing">
+    On the supplier record, open the **Supplier prices** tab. Link products to this supplier with a supplier reference, unit cost, minimum quantity, and delivery lead time. These prices populate automatically when you add the product to a purchase order.
+  </Step>
+  <Step title="Add supplier contacts">
+    Use the **Contacts** tab to store individual contacts at the supplier (account manager, logistics contact, etc.).
+  </Step>
+</Steps>
+
+<Note>
+A third party can be both a customer and a supplier simultaneously. Dolibarr keeps sales and purchase documents separate, so there is no risk of confusion between the two sides of the relationship.
+</Note>
+
+## Supplier price requests
+
+Before committing to a purchase order, you can request quotes from multiple suppliers for the same product.
+
+- Go to **Purchases → Supplier price requests → New request**.
+- Add one or more products and select the suppliers to contact.
+- Dolibarr generates a request form PDF that you can email to each supplier.
+- As responses come in, record each supplier's quoted price against the request.
+- Compare offers side by side, then convert the chosen quote into a purchase order.
+
+## Purchase orders
+
+Navigate to **Purchases → Purchase orders → New purchase order**.
+
+### Building a purchase order
+
+| Field | Description |
+|---|---|
+| **Supplier** | Select the supplier third-party record. |
+| **Order date** | Defaults to today; adjust as needed. |
+| **Planned delivery date** | Expected arrival date; used in delivery tracking reports. |
+| **Payment terms** | Net 30, on delivery, etc. |
+| **Incoterms** | Trade term defining delivery responsibilities (see below). |
+
+Add product lines. If supplier prices are configured, unit costs pre-fill automatically. Adjust quantities and prices as needed.
+
+### Validating and sending
+
+<Steps>
+  <Step title="Validate the order">
+    Click **Validate** to lock the order and assign it a purchase order number. The order status changes from **Draft** to **Validated**.
+  </Step>
+  <Step title="Send to supplier">
+    Click **Send by email** to deliver a PDF of the purchase order to your supplier contact. The sent date is recorded on the order.
+  </Step>
+  <Step title="Mark as sent">
+    If you sent the order outside Dolibarr (phone, fax), use **Set as sent** to update the status without triggering an email.
+  </Step>
+</Steps>
+
+## Reception (goods receipt)
+
+When goods arrive, record a reception against the purchase order.
+
+<Steps>
+  <Step title="Open the purchase order">
+    Navigate to the validated purchase order and click **Create reception**.
+  </Step>
+  <Step title="Enter received quantities">
+    For each line, enter the quantity actually received. You can receive less than ordered (partial reception) — the remaining quantity stays open on the order for a future delivery.
+  </Step>
+  <Step title="Assign to a warehouse">
+    Select the destination warehouse. Stock is increased immediately upon validation.
+  </Step>
+  <Step title="Validate the reception">
+    Click **Validate** to post the stock movement. A reception document is created with its own reference number.
+  </Step>
+</Steps>
+
+### Lot and serial number tracking on reception
+
+If the **Product Batches** module is enabled, an extra column appears on the reception form for each product configured with lot/serial tracking:
+
+<Tabs>
+  <Tab title="Lot tracking">
+    Enter the supplier's lot number and (optionally) a **best-before date** or **manufacture date**. All units in the reception are assigned to that lot. Dolibarr uses this for FIFO/FEFO picking on outbound movements.
+  </Tab>
+  <Tab title="Serial number tracking">
+    For products tracked by individual serial number, enter one serial number per unit received. Each serial number is stored as a separate stock entry.
+  </Tab>
+</Tabs>
+
+<Tip>
+Enable lot tracking on a product at **Products → Edit product → Batch/Serial tab → Tracking mode**. Changing this setting on a product that already has stock movements is not recommended.
+</Tip>
+
+## Supplier invoices
+
+Supplier invoices are created after reception to record the financial obligation.
+
+<Tabs>
+  <Tab title="From a reception">
+    Open the reception record and click **Create supplier invoice**. All lines and amounts carry over. Adjust if the invoice from the supplier differs from the order.
+  </Tab>
+  <Tab title="From a purchase order">
+    Open the validated purchase order and click **Create supplier invoice**. Use this path when you invoice before goods arrive (prepayment scenarios).
+  </Tab>
+  <Tab title="Manually">
+    Go to **Purchases → Supplier invoices → New invoice**. Select the supplier, add lines, and enter the supplier's own invoice number in the **Supplier ref** field.
+  </Tab>
+</Tabs>
+
+### Matching and payment
+
+1. Validate the supplier invoice. It posts to the **Purchase** accounting journal.
+2. Click **Add payment** to record the amount paid, the payment date, method, and bank account used.
+3. If you pay multiple supplier invoices in one bank transfer, use **Batch payment** to allocate the total across invoices.
+
+<Warning>
+Always enter the **supplier invoice reference** (their document number) in the **Supplier ref** field. This is essential for matching payments and for audit purposes.
+</Warning>
+
+## INCOTERMS
+
+INCOTERMS define which party bears transport costs and risk at each stage of delivery.
+
+- Enable INCOTERMS at **Setup → Modules → INCOTERMS**.
+- Configure available terms at **Setup → Dictionaries → INCOTERMS** (EXW, FCA, CPT, CIP, DAP, DPU, DDP, FAS, FOB, CFR, CIF are pre-loaded).
+- Assign an INCOTERM to a purchase order in the **Conditions** section of the order form. The selected term prints on the purchase order PDF.
+
+## Multi-currency purchasing
+
+<Steps>
+  <Step title="Enable multi-currency">
+    Go to **Setup → Modules → Multi-currency** and activate it.
+  </Step>
+  <Step title="Set the supplier's currency">
+    On the supplier record, set the default **currency** under **Commercial information**. This currency pre-fills on new purchase orders for that supplier.
+  </Step>
+  <Step title="Enter exchange rate">
+    On the purchase order, the current exchange rate is displayed. Adjust it if needed to match the rate on your bank confirmation.
+  </Step>
+  <Step title="Amounts in both currencies">
+    The order displays amounts in both the foreign currency and your base currency. The accounting entry uses the base currency equivalent at the rate recorded on the document.
+  </Step>
+</Steps>
+
+## Reporting
+
+<AccordionGroup>
+  <Accordion title="Supplier order statistics">
+    Go to **Purchases → Statistics** to see purchase volumes by supplier, product, or period. Filter by date range to track spending trends.
+  </Accordion>
+  <Accordion title="Pending deliveries">
+    **Purchases → Purchase orders** filtered by status **Partially received** or **Validated** shows all orders awaiting full delivery. Use the planned delivery date column to identify overdue orders.
+  </Accordion>
+  <Accordion title="Supplier invoice aging">
+    **Purchases → Supplier invoices** filtered to **Unpaid** shows all outstanding payables. Sort by due date to prioritise payment runs.
+  </Accordion>
+  <Accordion title="Product sourcing overview">
+    Navigate to **Products → Supplier prices** (backed by `price_suppliers.php`) to see all configured supplier prices for a product side by side, with lead times and minimum quantities.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,212 @@
+---
+title: "Install Dolibarr on your server"
+description: "Step-by-step instructions to install Dolibarr using packages, manual setup, or Docker. Covers system requirements and first-run configuration."
+---
+
+## System requirements
+
+Before you begin, confirm your environment meets these prerequisites:
+
+| Component | Requirement |
+|---|---|
+| **PHP** | 7.2 or later |
+| **Database** | MariaDB, MySQL, or PostgreSQL |
+| **Web server** | Apache or Nginx (any PHP-capable server) |
+| **Disk space** | At least 200 MB for the application; more for generated documents |
+
+Check the [Dolibarr releases page](https://wiki.dolibarr.org/index.php/Releases) to confirm PHP compatibility for the specific version you are installing.
+
+## Installation methods
+
+<Tabs>
+  <Tab title="Manual (recommended)">
+    The manual method gives you the most control and makes future upgrades straightforward.
+
+    <Steps>
+      <Step title="Clone the repository">
+        Replace `x.y` with the version you want to install (for example, `20.0`):
+
+        ```bash
+        git clone https://github.com/dolibarr/dolibarr -b x.y
+        ```
+
+        Alternatively, download and extract the `.zip` release archive from [dolibarr.org](https://www.dolibarr.org/).
+      </Step>
+
+      <Step title="Point your web server at htdocs/">
+        Configure your web server virtual host to use `dolibarr/htdocs` as the document root. For Apache this looks like:
+
+        ```apache
+        <VirtualHost *:80>
+            ServerName dolibarr.example.com
+            DocumentRoot /var/www/dolibarr/htdocs
+        </VirtualHost>
+        ```
+
+        For Nginx:
+
+        ```nginx
+        server {
+            server_name dolibarr.example.com;
+            root /var/www/dolibarr/htdocs;
+            index index.php;
+
+            location ~ \.php$ {
+                fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            }
+        }
+        ```
+      </Step>
+
+      <Step title="Create an empty conf.php">
+        The installer writes configuration into this file. Create it empty and grant write access to the web server user:
+
+        ```bash
+        touch dolibarr/htdocs/conf/conf.php
+        chown www-data:www-data dolibarr/htdocs/conf/conf.php
+        chmod 640 dolibarr/htdocs/conf/conf.php
+        ```
+      </Step>
+
+      <Step title="Open the install wizard in your browser">
+        Navigate to the `/install/` path of your Dolibarr URL, for example:
+
+        ```
+        http://dolibarr.example.com/install/
+        ```
+
+        The wizard will check prerequisites, ask for your database credentials, create the database schema, and prompt you to create the first administrator account.
+      </Step>
+
+      <Step title="Follow the installer steps">
+        The wizard walks you through:
+
+        1. Language selection
+        2. Prerequisite checks (PHP version, extensions, file permissions)
+        3. Database connection details
+        4. Database creation or selection
+        5. Administrator account creation
+        6. Completion — the installer writes `install.lock` to prevent re-running
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Docker">
+    The official Docker image is available on Docker Hub as `dolibarr/dolibarr`.
+
+    **Quick start with a linked database container:**
+
+    ```bash
+    # Start a MariaDB container
+    docker run -d \
+      --name dolibarr-db \
+      -e MYSQL_ROOT_PASSWORD=rootpass \
+      -e MYSQL_DATABASE=dolibarr \
+      -e MYSQL_USER=dolibarr \
+      -e MYSQL_PASSWORD=dolibarr \
+      mariadb:10.11
+
+    # Start Dolibarr
+    docker run -d \
+      --name dolibarr \
+      --link dolibarr-db:mysql \
+      -p 80:80 \
+      -e DOLI_DB_HOST=mysql \
+      -e DOLI_DB_USER=dolibarr \
+      -e DOLI_DB_PASSWORD=dolibarr \
+      -e DOLI_DB_NAME=dolibarr \
+      -e DOLI_URL_ROOT=http://localhost \
+      -e DOLI_ADMIN_LOGIN=admin \
+      -e DOLI_ADMIN_PASSWORD=changeme \
+      dolibarr/dolibarr
+    ```
+
+    Key environment variables:
+
+    | Variable | Description |
+    |---|---|
+    | `DOLI_DB_HOST` | Database server hostname |
+    | `DOLI_DB_USER` | Database username |
+    | `DOLI_DB_PASSWORD` | Database password |
+    | `DOLI_DB_NAME` | Database name |
+    | `DOLI_URL_ROOT` | Public URL of your Dolibarr instance |
+    | `DOLI_ADMIN_LOGIN` | Initial admin username |
+    | `DOLI_ADMIN_PASSWORD` | Initial admin password |
+
+    Full Docker documentation and `docker-compose` examples are at [github.com/Dolibarr/dolibarr-docker](https://github.com/Dolibarr/dolibarr-docker).
+  </Tab>
+
+  <Tab title="Packages">
+    Pre-built packages are available for users who prefer a graphical installer:
+
+    | Platform | Package | Notes |
+    |---|---|---|
+    | **Windows** | [DoliWamp](https://wiki.dolibarr.org/index.php/Dolibarr_for_Windows_(DoliWamp)) | Bundles Apache, MariaDB, and PHP in a Windows installer |
+    | **Ubuntu / Debian** | [DoliDeb](https://wiki.dolibarr.org/index.php/Dolibarr_for_Ubuntu_or_Debian) | `.deb` package for Debian-based distributions |
+    | **RHEL / Fedora / OpenSuse / Mageia** | DoliRpm | `.rpm` package for Red Hat-based distributions |
+
+    Download all packages from the [official download page](https://www.dolibarr.org/).
+
+    These packages handle web server and database configuration automatically. After installation, the browser wizard still runs to create the database schema and the first admin user.
+  </Tab>
+</Tabs>
+
+## Post-install steps
+
+Once the wizard completes:
+
+1. **Log in** with the administrator account you created during installation.
+2. **Activate modules** from **Home → Setup → Modules/Applications** to enable the features you need.
+3. **Configure your company** (name, logo, address, currency) from **Home → Setup → Company/Organization**.
+4. **Set up email** from **Home → Setup → Email** so Dolibarr can send invoices and notifications.
+
+<Note>
+  After a successful installation, Dolibarr writes an `install.lock` file to the `documents/` directory. This file prevents the installer from running again. If you ever need to re-run the wizard (for example, after an upgrade), you must delete this file manually.
+</Note>
+
+## Upgrading
+
+<Warning>
+  Always back up your database and your `documents/` directory before upgrading. Dolibarr supports upgrades from any version after 2.8, but a backup protects you from unexpected issues.
+</Warning>
+
+<Steps>
+  <Step title="Back up your data">
+    ```bash
+    # Back up the database
+    mysqldump -u dolibarr -p dolibarr > dolibarr_backup_$(date +%F).sql
+
+    # Back up the documents directory
+    tar -czf dolibarr_docs_$(date +%F).tar.gz /var/www/dolibarr/documents
+    ```
+  </Step>
+
+  <Step title="Verify PHP compatibility">
+    Check the [releases page](https://wiki.dolibarr.org/index.php/Releases) to confirm the new version supports your installed PHP version.
+  </Step>
+
+  <Step title="Overwrite application files">
+    Replace the contents of your `dolibarr/` directory with the new version's files. Do not delete the `documents/` directory or `htdocs/conf/conf.php`.
+
+    ```bash
+    git fetch origin
+    git checkout x.y   # new version branch
+    ```
+  </Step>
+
+  <Step title="Run the upgrade wizard">
+    Navigate to `/install/` in your browser. Dolibarr detects the version mismatch and presents the upgrade wizard instead of the installation wizard.
+
+    If an `install.lock` file exists, Dolibarr will prompt you to remove it before proceeding:
+
+    ```bash
+    rm /var/www/dolibarr/documents/install.lock
+    ```
+  </Step>
+
+  <Step title="Follow the upgrade steps">
+    The wizard applies database migrations and updates configuration values. When it completes, Dolibarr writes a new `install.lock` file.
+  </Step>
+</Steps>
